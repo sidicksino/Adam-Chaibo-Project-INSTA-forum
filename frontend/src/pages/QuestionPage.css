@@ -1,0 +1,143 @@
+/* Page de détail d'une question (le reste vient de HomePage.css) */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.detail__retour {
+  align-self: flex-start;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #eaf0f9;
+  color: #26466e;
+}
+.detail__retour:hover { background: #dde7f6; }
+
+.detail__question,
+.detail__reponse,
+.detail__formulaire { display: flex; flex-direction: column; gap: 14px; padding: 24px; }
+
+/* Colonne de vote à gauche, contenu à droite */
+.detail__ligne { flex-direction: row; gap: 20px; align-items: flex-start; }
+.detail__contenu { display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; }
+
+.votes { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; width: 44px; }
+.votes__score { font-size: 1.25rem; color: var(--h-ink); }
+.votes__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--h-line);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--h-light);
+}
+.votes__btn:hover:not(:disabled) { border-color: #b8cdee; color: var(--h-blue); }
+.votes__btn.is-actif { border-color: var(--h-blue); background: var(--h-blue-soft); color: var(--h-blue); }
+.votes__btn.is-contre { border-color: #e5484d; background: #fdecec; color: #e5484d; }
+.votes__btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.detail__entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.detail__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; flex: none; }
+
+.detail__favori {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--h-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--h-gray);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.detail__favori:hover { border-color: #f5c56b; color: #b45309; }
+.detail__favori.is-active { border-color: #f5c56b; background: #fff7e6; color: #b45309; }
+.detail__entete h1 { margin: 0; font-size: 1.5rem; line-height: 1.35; color: var(--h-ink); }
+
+/* Le texte garde ses retours à la ligne */
+.detail__texte {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--h-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.detail__badge {
+  align-self: flex-start;
+  flex: none;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e7f6ec;
+  color: #1e8e4e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.detail__titre-reponses { margin: 8px 0 0; font-size: 1.125rem; color: var(--h-ink); }
+
+.detail__reponse.is-acceptee { border-color: #8fd3a8; box-shadow: 0 0 0 1px #8fd3a8; }
+
+.detail__pied { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+
+.detail__accepter {
+  padding: 7px 12px;
+  border: 1px solid #8fd3a8;
+  border-radius: 8px;
+  background: #fff;
+  color: #1e8e4e;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.detail__accepter:hover { background: #e7f6ec; }
+
+.detail__formulaire h2 { margin: 0; font-size: 1.125rem; color: var(--h-ink); }
+.detail__formulaire textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1.5px solid #d6dfec;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--h-ink);
+  resize: vertical;
+}
+.detail__formulaire textarea:focus {
+  outline: 0;
+  border-color: #4d8bf0;
+  box-shadow: 0 0 0 3px rgba(77, 139, 240, 0.2);
+}
+.detail__formulaire .home__ask { align-self: flex-end; }
+.detail__formulaire .home__ask:disabled { opacity: 0.7; cursor: wait; }
+
+.detail__erreur {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fdecec;
+  color: #b42318;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 760px) {
+  .detail { padding: 20px 16px 40px; }
+  .detail__ligne { gap: 12px; padding: 18px 14px; }
+  .votes { width: 36px; }
+  .votes__btn { width: 34px; height: 34px; }
+  .detail__entete { flex-direction: column; gap: 10px; }
+  .detail__formulaire .home__ask { align-self: stretch; justify-content: center; }
+}

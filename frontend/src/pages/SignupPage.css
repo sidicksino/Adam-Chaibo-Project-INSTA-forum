@@ -1,0 +1,64 @@
+/* Styles propres à la page de création de compte
+   (le reste vient de LoginPage.css) */
+
+.login__form--signup h2 { font-size: 2.5rem; margin-bottom: 10px; }
+.login__form--signup .login__lead { margin-bottom: 28px; font-size: 1rem; }
+
+.row { display: flex; gap: 16px; }
+
+.field-wrap {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 16px;
+  text-align: left;
+}
+.field-wrap .field { height: 58px; margin-bottom: 0; }
+
+.field--error { border-color: #e5484d; }
+.field--error:focus-within {
+  border-color: #e5484d;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.18);
+}
+.field__error {
+  margin: 6px 4px 0;
+  font-size: 0.8125rem;
+  color: #b42318;
+}
+
+/* Listes déroulantes */
+.field select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.field select.is-empty { color: var(--placeholder); }
+.field select:disabled { cursor: not-allowed; opacity: 0.65; }
+.field select option { color: var(--ink); }
+
+/* Conditions */
+.terms-wrap { margin: 4px 0 22px; text-align: left; }
+.check--top { align-items: flex-start; font-size: 0.875rem; line-height: 1.5; }
+.check--top input { flex: none; margin-top: 1px; }
+.check--top a { color: var(--blue-600); text-decoration: none; }
+.check--top a:hover { text-decoration: underline; }
+
+.btn--signup { height: 64px; font-size: 1.125rem; }
+
+.signup__switch {
+  margin: 20px 0 0;
+  font-size: 0.9375rem;
+  color: #4a5b76;
+}
+.signup__switch .link { font-weight: 600; }
+
+@media (max-width: 560px) {
+  .row { flex-direction: column; gap: 0; }
+}

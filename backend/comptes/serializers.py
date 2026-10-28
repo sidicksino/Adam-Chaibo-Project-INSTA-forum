@@ -1,0 +1,90 @@
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
+
+from .models import Utilisateur
+
+
+class UtilisateurSerializer(serializers.ModelSerializer):
+    """Données publiques d'un utilisateur renvoyées au frontend."""
+
+    prenom = serializers.CharField(source="first_name")
+    nom = serializers.CharField(source="last_name")
+
+    class Meta:
+        model = Utilisateur
+        fields = ["id", "username", "email", "prenom", "nom", "profil", "niveau"]
+
+
+class InscriptionSerializer(serializers.ModelSerializer):
+    """Création d'un compte à partir du formulaire d'inscription."""
+
+    prenom = serializers.CharField(source="first_name", max_length=150)
+    nom = serializers.CharField(source="last_name", max_length=150)
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Utilisateur
+        fields = ["username", "email", "prenom", "nom", "profil", "niveau", "password"]
+        extra_kwargs = {"niveau": {"required": False}}
+
+    def validate_username(self, valeur):
+        if Utilisateur.objects.filter(username__iexact=valeur).exists():
+            raise serializers.ValidationError("Ce nom d’utilisateur est déjà pris.")
+        return valeur
+
+    def validate_email(self, valeur):
+        valeur = valeur.lower()
+        if Utilisateur.objects.filter(email__iexact=valeur).exists():
+            raise serializers.ValidationError("Un compte existe déjà avec cette adresse email.")
+        return valeur
+
+    def validate(self, donnees):
+        # Le niveau est obligatoire pour un étudiant, et vide pour les autres profils.
+        if donnees.get("profil") == Utilisateur.Profil.ETUDIANT:
+            if not donnees.get("niveau"):
+                raise serializers.ValidationError({"niveau": "Choisissez votre niveau."})
+        else:
+            donnees["niveau"] = ""
+
+        # Règles de sécurité de Django (longueur, mot de passe trop courant, etc.)
+        utilisateur = Utilisateur(
+            username=donnees.get("username"),
+            email=donnees.get("email"),
+            first_name=donnees.get("first_name"),
+            last_name=donnees.get("last_name"),
+        )
+        try:
+            validate_password(donnees["password"], user=utilisateur)
+        except Exception as erreur:
+            raise serializers.ValidationError({"password": list(erreur.messages)})
+        return donnees
+
+    def create(self, donnees):
+        # create_user chiffre le mot de passe : il n'est jamais stocké en clair.
+        return Utilisateur.objects.create_user(**donnees)
+
+
+class ConnexionSerializer(serializers.Serializer):
+    """Connexion avec le nom d'utilisateur OU l'adresse email."""
+
+    identifier = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, donnees):
+        identifiant = donnees["identifier"].strip()
+
+        # Si l'utilisateur a saisi un email, on retrouve le nom d'utilisateur correspondant.
+        compte = Utilisateur.objects.filter(email__iexact=identifiant).first()
+        username = compte.username if compte else identifiant
+
+        utilisateur = authenticate(
+            request=self.context.get("request"),
+            username=username,
+            password=donnees["password"],
+        )
+        if utilisateur is None:
+            raise serializers.ValidationError("Identifiants incorrects.")
+
+        donnees["utilisateur"] = utilisateur
+        return donnees

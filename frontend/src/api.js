@@ -1,0 +1,117 @@
+// Adresse de l'API Django (modifiable via le fichier .env : VITE_API_URL=...)
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+
+const CLE_JETON = "insta_jeton";
+
+/* ---------- Jeton de connexion ---------- */
+// « Se souvenir de moi » : localStorage (persiste), sinon sessionStorage (fermé avec l'onglet).
+export const lireJeton = () =>
+  localStorage.getItem(CLE_JETON) || sessionStorage.getItem(CLE_JETON);
+
+const enregistrerJeton = (jeton, seSouvenir) => {
+  (seSouvenir ? localStorage : sessionStorage).setItem(CLE_JETON, jeton);
+};
+
+const effacerJeton = () => {
+  localStorage.removeItem(CLE_JETON);
+  sessionStorage.removeItem(CLE_JETON);
+};
+
+/* ---------- Requête générique ---------- */
+// Transforme les erreurs renvoyées par Django en un seul message lisible.
+const messageErreur = (donnees) => {
+  if (!donnees || typeof donnees !== "object") return "Une erreur est survenue. Réessayez.";
+  if (donnees.detail) return donnees.detail;
+  return Object.values(donnees).flat().join(" ");
+};
+
+async function requete(chemin, { methode = "GET", corps } = {}) {
+  const enTetes = { "Content-Type": "application/json" };
+  const jeton = lireJeton();
+  if (jeton) enTetes.Authorization = `Token ${jeton}`;
+
+  let reponse;
+  try {
+    reponse = await fetch(`${API_URL}${chemin}`, {
+      method: methode,
+      headers: enTetes,
+      body: corps ? JSON.stringify(corps) : undefined,
+    });
+  } catch {
+    throw new Error("Impossible de joindre le serveur. Vérifiez que le backend est démarré.");
+  }
+
+  // 204 : réponse sans contenu
+  const donnees = reponse.status === 204 ? null : await reponse.json().catch(() => null);
+  if (!reponse.ok) throw new Error(messageErreur(donnees));
+  return donnees;
+}
+
+/* ---------- Comptes ---------- */
+export const inscrire = (donnees) =>
+  requete("/comptes/inscription/", { methode: "POST", corps: donnees });
+
+export async function connecter({ identifier, password, remember }) {
+  // Un ancien jeton ne doit pas être envoyé avec la demande de connexion.
+  effacerJeton();
+  const { token, utilisateur } = await requete("/comptes/connexion/", {
+    methode: "POST",
+    corps: { identifier, password },
+  });
+  enregistrerJeton(token, remember);
+  return utilisateur;
+}
+
+export async function deconnecter() {
+  try {
+    await requete("/comptes/deconnexion/", { methode: "POST" });
+  } finally {
+    // Même si le serveur ne répond pas, on oublie le jeton localement.
+    effacerJeton();
+  }
+}
+
+/* ---------- Forum ---------- */
+export const listerQuestions = () => requete("/questions/");
+
+export const publierQuestion = (donnees) =>
+  requete("/questions/", { methode: "POST", corps: donnees });
+
+export const lireQuestion = (id) => requete(`/questions/${id}/`);
+
+export const listerReponses = (idQuestion) => requete(`/questions/${idQuestion}/reponses/`);
+
+export const publierReponse = (idQuestion, contenu) =>
+  requete(`/questions/${idQuestion}/reponses/`, { methode: "POST", corps: { contenu } });
+
+// Un second appel sur la même réponse annule l'acceptation.
+export const accepterReponse = (idReponse) =>
+  requete(`/reponses/${idReponse}/accepter/`, { methode: "POST" });
+
+// valeur : 1 (pour) ou -1 (contre). Revoter la même valeur retire le vote.
+export const voterQuestion = (id, valeur) =>
+  requete(`/questions/${id}/voter/`, { methode: "POST", corps: { valeur } });
+
+export const voterReponse = (id, valeur) =>
+  requete(`/reponses/${id}/voter/`, { methode: "POST", corps: { valeur } });
+
+// Ajoute la question aux favoris, ou l'en retire si elle y est déjà
+export const basculerFavori = (id) =>
+  requete(`/questions/${id}/favori/`, { methode: "POST" });
+
+export const lireClassement = () => requete("/classement/");
+
+export const listerCategories = () => requete("/categories/");
+
+export const lireStatistiques = () => requete("/statistiques/");
+
+// Retrouve l'utilisateur connecté au rechargement de la page.
+export async function utilisateurConnecte() {
+  if (!lireJeton()) return null;
+  try {
+    return await requete("/comptes/moi/");
+  } catch {
+    effacerJeton();
+    return null;
+  }
+}
