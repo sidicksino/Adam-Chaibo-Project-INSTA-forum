@@ -148,7 +148,11 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
     setErreur("");
     setOnglet("questions");
     lireMembre(username)
-      .then(setMembre)
+      .then((m) => {
+        setMembre(m);
+        // Un membre qui répond sans poser de questions (souvent un enseignant) : on ouvre ses réponses
+        if (m.questions.length === 0 && m.reponses.length > 0) setOnglet("reponses");
+      })
       .catch((err) => setErreur(err.statut === 404 ? "Ce membre n’existe pas." : err.message));
   }, [username]);
 

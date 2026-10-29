@@ -10,6 +10,7 @@ On y pose ses questions, on répond à celles des autres, on vote pour les meill
 - **Questions** : publication avec catégorie et tags, recherche, onglets *Récentes*, *Populaires*, *Sans réponse*, *Résolues*.
 - **Réponses** : page de détail d’une question, réponses, compteur de vues (une vue par membre).
 - **Modifier / supprimer** : chacun peut corriger ou supprimer ses propres questions et réponses (mention « modifiée »).
+- **Profil des membres** : cliquer sur un nom ouvre son profil (questions, réponses, statistiques, rang au classement). Sur son propre profil, l’onglet « Paramètres » permet de modifier ses informations et son mot de passe.
 - **Mot de passe oublié** : lien envoyé par email (valable 1 heure, utilisable une seule fois) pour choisir un nouveau mot de passe.
 - **Notifications** (🔔) : prévient quand quelqu’un répond à votre question ou accepte votre réponse ; pastille rouge, vérification toutes les 30 s, « Tout marquer comme lu ».
 - **Code mis en forme** : le code entouré de ``` s’affiche en couleur (Python, Java, C, C++, C#, JavaScript, TypeScript, PHP, SQL, HTML, CSS, JSON, terminal), avec un bouton « Copier » ; `code` dans une phrase est aussi mis en valeur. Le bouton « </> Code » des formulaires insère le bloc.
@@ -182,6 +183,8 @@ Toutes les adresses commencent par `/api/`. 🔒 = connexion obligatoire (en-tê
 | POST | `/comptes/connexion/` | se connecter (`identifier` = nom d’utilisateur ou email) → renvoie le jeton |
 | POST | `/comptes/deconnexion/` 🔒 | supprimer le jeton |
 | GET | `/comptes/moi/` 🔒 | utilisateur connecté |
+| PATCH | `/comptes/moi/` 🔒 | modifier son prénom, nom, profil ou niveau |
+| POST | `/comptes/mot-de-passe/` 🔒 | changer son mot de passe (`ancien`, `nouveau`) → nouveau jeton |
 | POST | `/comptes/mot-de-passe-oublie/` | envoie le lien par email (`{"email": …}`) |
 | POST | `/comptes/reinitialiser/verifier/` | le lien (`uid`, `token`) est-il encore valable ? |
 | POST | `/comptes/reinitialiser/` | nouveau mot de passe (`uid`, `token`, `password`) |
@@ -208,12 +211,13 @@ Toutes les adresses commencent par `/api/`. 🔒 = connexion obligatoire (en-tê
 | GET | `/categories/` | catégories et nombre de questions |
 | GET | `/statistiques/` | chiffres de la page d’accueil |
 | GET | `/classement/` | classement des membres |
+| GET | `/membres/<nom d’utilisateur>/` | profil public d’un membre (l’email n’est visible que par lui-même) |
 
 Revoter la même valeur, ou cliquer de nouveau sur « favori » ou « accepter », **annule** l’action.
 
 ## Tests automatisés
 
-37 tests vérifient les règles du forum : inscription et connexion, mot de passe oublié, une vue par membre (l’auteur n’est pas compté), pas de vote pour soi-même, une seule réponse acceptée, seul l’auteur modifie ou supprime, favoris, notifications, classement, tri des questions et données de démonstration.
+49 tests vérifient les règles du forum : inscription et connexion, mot de passe oublié, une vue par membre (l’auteur n’est pas compté), pas de vote pour soi-même, une seule réponse acceptée, seul l’auteur modifie ou supprime, favoris, notifications, classement, tri des questions et données de démonstration.
 
 ```bash
 cd backend
@@ -266,7 +270,7 @@ De nouvelles migrations sont arrivées : lancez `python manage.py migrate`.
 - [x] Mise en forme du code dans les questions et réponses (blocs entre trois accents graves)
 - [x] « Mot de passe oublié » (réinitialisation par email)
 - [x] Notifications (cloche)
-- [ ] Page de profil
+- [x] Page de profil
 - [x] Tests automatisés (backend)
 - [ ] Réglages de production avant la mise en ligne : `SECRET_KEY` hors du code, `DEBUG = False`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`
 - [ ] Pagination des questions
