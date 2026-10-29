@@ -8,9 +8,10 @@ import {
 import { Avatar, Avis, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
 
 const GradCap = () => (
-  <svg width="40" height="26" viewBox="0 0 160 100" aria-hidden="true">
-    <path d="M80 4 158 34 80 64 2 34Z" fill="#0b5ed7" />
-    <path d="M34 54v24q46 20 92 0V54L80 74Z" fill="#0b5ed7" />
+  <svg width="44" height="28" viewBox="0 0 160 100" aria-hidden="true">
+    <path d="M80 4 158 34 80 64 2 34Z" fill="#1766f0" />
+    <path d="M34 54v24q46 20 92 0V54L80 74Z" fill="#1766f0" />
+    <path d="M150 38v30" stroke="#1766f0" strokeWidth="5" strokeLinecap="round" />
   </svg>
 );
 

@@ -119,7 +119,7 @@
 .detail__outils button.is-danger { color: #b42318; }
 .detail__outils button.is-danger:hover { border-color: #f3b8b4; background: #fdecec; color: #b42318; }
 .detail__outils button.is-principal { border-color: var(--h-blue); background: var(--h-blue); color: #fff; }
-.detail__outils button.is-principal:hover { background: #0a52bd; color: #fff; }
+.detail__outils button.is-principal:hover { background: #0f52cc; color: #fff; }
 .detail__outils button:disabled { opacity: 0.7; cursor: wait; }
 
 /* Modification d'une réponse dans la page */
@@ -128,7 +128,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
-  border: 1.5px solid #4d8bf0;
+  border: 1.5px solid #1766f0;
   border-radius: 10px;
   font: inherit;
   font-size: 0.9375rem;
@@ -152,7 +152,7 @@
 }
 .detail__formulaire textarea:focus {
   outline: 0;
-  border-color: #4d8bf0;
+  border-color: #1766f0;
   box-shadow: 0 0 0 3px rgba(77, 139, 240, 0.2);
 }
 .detail__formulaire .home__ask { align-self: flex-end; }

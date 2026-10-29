@@ -205,23 +205,26 @@
 
 .question-page {
   min-height: 100vh;
-  background: #f2f5fb;
+  background: #f4f7fc;
   padding: 40px 20px;
-  font-family: Arial, sans-serif;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: #22355a;
 }
 
 .question-container {
   max-width: 800px;
   margin: auto;
   background: white;
-  padding: 35px;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  padding: 36px;
+  border: 1px solid #e1e9f5;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(15, 42, 92, 0.04);
 }
 
 .question-container h1 {
   font-size: 28px;
-  color: #10254c;
+  font-weight: 800;
+  color: #0f2a5c;
   margin-bottom: 10px;
 }
 
@@ -237,8 +240,8 @@
 }
 
 .question-container label {
-  font-weight: bold;
-  color: #263b60;
+  font-weight: 600;
+  color: #0f2a5c;
   margin-top: 10px;
 }
 
@@ -247,8 +250,8 @@
 .question-container textarea {
   width: 100%;
   padding: 13px;
-  border: 1px solid #d8e1ef;
-  border-radius: 8px;
+  border: 1px solid #dde6f3;
+  border-radius: 12px;
   font-size: 14px;
   font-family: inherit;
   box-sizing: border-box;
@@ -258,8 +261,8 @@
 .question-container select:focus,
 .question-container textarea:focus {
   outline: none;
-  border-color: #0860df;
-  box-shadow: 0 0 0 3px #0860df18;
+  border-color: #1766f0;
+  box-shadow: 0 0 0 3px rgba(23, 102, 240, 0.15);
 }
 
 .question-actions {
@@ -270,17 +273,19 @@
 }
 
 .publier-btn {
-  background: #0860df;
+  background: #1766f0;
   color: white;
   border: none;
   padding: 13px 24px;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  font-weight: bold;
+  font: inherit;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(23, 102, 240, 0.28);
 }
 
 .publier-btn:hover {
-  background: #064bb2;
+  background: #0f52cc;
 }
 
 .publier-btn:disabled {
@@ -299,12 +304,14 @@
 
 .annuler-btn,
 .retour-btn {
-  background: #eaf0f9;
-  color: #26466e;
+  background: #e7effd;
+  color: #0f2a5c;
   border: none;
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
+  font: inherit;
+  font-weight: 500;
 }
 
 .retour-btn {
