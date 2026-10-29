@@ -104,6 +104,40 @@
 }
 .detail__accepter:hover { background: #e7f6ec; }
 
+/* Boutons Modifier / Supprimer (auteur uniquement) */
+.detail__outils { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.detail__outils button:not(.detail__accepter) {
+  padding: 6px 12px;
+  border: 1px solid var(--h-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--h-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.detail__outils button:not(.detail__accepter):hover { border-color: #b8cdee; color: var(--h-blue); }
+.detail__outils button.is-danger { color: #b42318; }
+.detail__outils button.is-danger:hover { border-color: #f3b8b4; background: #fdecec; color: #b42318; }
+.detail__outils button.is-principal { border-color: var(--h-blue); background: var(--h-blue); color: #fff; }
+.detail__outils button.is-principal:hover { background: #0a52bd; color: #fff; }
+.detail__outils button:disabled { opacity: 0.7; cursor: wait; }
+
+/* Modification d'une réponse dans la page */
+.detail__edition { display: flex; flex-direction: column; gap: 10px; }
+.detail__edition textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1.5px solid #4d8bf0;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--h-ink);
+  resize: vertical;
+}
+.detail__edition textarea:focus { outline: 0; box-shadow: 0 0 0 3px rgba(77, 139, 240, 0.2); }
+.detail__edition .detail__outils { justify-content: flex-end; }
+
 .detail__formulaire h2 { margin: 0; font-size: 1.125rem; color: var(--h-ink); }
 .detail__formulaire textarea {
   width: 100%;

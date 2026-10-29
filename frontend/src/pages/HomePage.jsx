@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./HomePage.css";
 import { basculerFavori, listerCategories, listerQuestions, lireClassement, lireStatistiques } from "../api";
-import { Avatar, couleurPour, ilYA, nomCourt, pluriel } from "../commun";
+import { Avatar, Avis, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
 
 
 /* ---------- Icônes ---------- */
@@ -44,6 +44,7 @@ const versCarte = (q) => ({
   solved: q.resolue,
   title: q.titre,
   excerpt: extrait(q.description),
+  description: q.description,
   tags: [q.categorie.nom, ...q.tags],
   categorieId: q.categorie.id,
   author: nomCourt(q.auteur),
@@ -83,11 +84,13 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
   const [classement, setClassement] = useState(null);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
-
-  const fullName = user ? `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() : "Invité";
+  const [erreurClassement, setErreurClassement] = useState("");
+  const [avis, afficherAvis] = useAvis();
 
   // Chargement des questions, catégories et statistiques depuis Django
-  useEffect(() => {
+  const charger = () => {
+    setChargement(true);
+    setErreur("");
     Promise.all([listerQuestions(), listerCategories(), lireStatistiques()])
       .then(([q, c, s]) => {
         setQuestions(q.map(versCarte));
@@ -96,19 +99,21 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
       })
       .catch((err) => setErreur(err.message))
       .finally(() => setChargement(false));
-  }, []);
+  };
+
+  useEffect(charger, []);
 
   // Le classement n'est chargé que lorsqu'on ouvre ce menu
   useEffect(() => {
-    if (menu === "Classement" && !classement) {
-      lireClassement().then(setClassement).catch((err) => setErreur(err.message));
+    if (menu === "Classement" && !classement && !erreurClassement) {
+      lireClassement().then(setClassement).catch((err) => setErreurClassement(err.message));
     }
-  }, [menu, classement]);
+  }, [menu, classement, erreurClassement]);
 
-  const changerMenu = (nouveau, categorie = null) => {
-    onChangerVue({ menu: nouveau, categorie });
-    setTab("Récentes");
-  };
+  // Changer de menu (y compris avec le bouton Retour du navigateur) remet l'onglet « Récentes »
+  useEffect(() => setTab("Récentes"), [menu, categorieFiltre]);
+
+  const changerMenu = (nouveau, categorie = null) => onChangerVue({ menu: nouveau, categorie });
 
   // Une recherche depuis « Catégories » ou « Classement » bascule vers la liste des questions
   const rechercher = (texte) => {
@@ -121,7 +126,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
       const { favori } = await basculerFavori(id);
       setQuestions((liste) => liste.map((q) => (q.id === id ? { ...q, favori } : q)));
     } catch (err) {
-      alert(err.message);
+      afficherAvis(err.message);
     }
   };
 
@@ -134,10 +139,11 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
     if (tab === "Populaires") items.sort((a, b) => b.votes - a.votes);
     if (tab === "Sans réponse") items = items.filter((q) => q.answers === 0);
     if (tab === "Résolues") items = items.filter((q) => q.solved);
+    // La recherche porte sur le titre, la description, les tags et l'auteur
     const s = query.trim().toLowerCase();
     if (s) {
-      items = items.filter(
-        (q) => q.title.toLowerCase().includes(s) || q.tags.some((t) => t.toLowerCase().includes(s))
+      items = items.filter((q) =>
+        [q.title, q.description, q.author, ...q.tags].some((texte) => texte.toLowerCase().includes(s))
       );
     }
     return items;
@@ -158,7 +164,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
     <div className="home">
       {/* ===== Barre du haut ===== */}
       <header className="home__nav">
-        <a className="home__logo" href="/" onClick={(e) => { e.preventDefault(); changerMenu("Accueil"); }}>
+        <a className="home__logo" href="#/">
           <GradCap />
           <span>INSTA-<b>FORUM</b></span>
         </a>
@@ -174,10 +180,11 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             {/* Le texte est masqué sur téléphone (voir HomePage.css) : seul le « + » reste */}
             {I.plus} <span>Poser une question</span>
           </button>
-          <button className="home__icon-btn" aria-label="Notifications">{I.bell}</button>
-          <button className="home__avatar-btn" onClick={onLogout} title="Se déconnecter" aria-label="Se déconnecter">
-            <Avatar name={fullName} size={44} />
+          <button className="home__icon-btn" aria-label="Notifications" title="Notifications"
+            onClick={() => afficherAvis("Les notifications ne sont pas encore disponibles.")}>
+            {I.bell}
           </button>
+          <MenuCompte user={user} onLogout={onLogout} />
         </div>
       </header>
 
@@ -228,7 +235,12 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             </div>
           )}
 
-          {erreur && <div className="card home__empty" role="alert">{erreur}</div>}
+          {erreur && (
+            <div className="card home__empty" role="alert">
+              {erreur}
+              <button type="button" className="home__ask home__empty-action" onClick={charger}>Réessayer</button>
+            </div>
+          )}
 
           {/* ===== Listes de questions ===== */}
           {VUES_LISTE.includes(menu) && (
@@ -312,7 +324,14 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
           {/* ===== Classement ===== */}
           {menu === "Classement" && (
             <section className="card classement">
-              {!classement && !erreur && <p className="home__empty">Chargement du classement…</p>}
+              {!classement && !erreurClassement && <p className="home__empty">Chargement du classement…</p>}
+              {erreurClassement && (
+                <div className="home__empty" role="alert">
+                  {erreurClassement}
+                  <button type="button" className="home__ask home__empty-action"
+                    onClick={() => setErreurClassement("")}>Réessayer</button>
+                </div>
+              )}
               {classement && (
                 <>
                   <p className="classement__bareme">
@@ -398,6 +417,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
           </section>
         </aside>
       </div>
+      <Avis texte={avis} />
     </div>
   );
 }

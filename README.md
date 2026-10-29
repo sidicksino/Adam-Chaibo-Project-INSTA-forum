@@ -8,7 +8,8 @@ On y pose ses questions, on répond à celles des autres, on vote pour les meill
 
 - **Comptes** : inscription (prénom, nom, profil étudiant / enseignant / personnel, niveau), connexion avec le nom d’utilisateur **ou** l’email, option « Se souvenir de moi », déconnexion.
 - **Questions** : publication avec catégorie et tags, recherche, onglets *Récentes*, *Populaires*, *Sans réponse*, *Résolues*.
-- **Réponses** : page de détail d’une question, réponses, compteur de vues.
+- **Réponses** : page de détail d’une question, réponses, compteur de vues (une vue par membre).
+- **Modifier / supprimer** : chacun peut corriger ou supprimer ses propres questions et réponses (mention « modifiée »).
 - **Réponse acceptée** : l’auteur de la question choisit la bonne réponse, la question passe en *Résolue*.
 - **Votes** : pour (▲) ou contre (▼) une question ou une réponse ; impossible de voter pour soi-même.
 - **Menu** : *Accueil*, *Questions* (filtre par catégorie), *Catégories*, *Mes questions*, *Favoris* (☆), *Classement*.
@@ -158,11 +159,15 @@ Toutes les adresses commencent par `/api/`. 🔒 = connexion obligatoire (en-tê
 |---|---|---|
 | GET | `/questions/` | toutes les questions |
 | POST | `/questions/` 🔒 | publier une question |
-| GET | `/questions/<id>/` | une question (ajoute une vue) |
+| GET | `/questions/<id>/` | une question (une vue par membre, l’auteur n’est pas compté) |
+| PATCH | `/questions/<id>/` 🔒 | modifier sa question (auteur uniquement) |
+| DELETE | `/questions/<id>/` 🔒 | supprimer sa question et ses réponses (auteur uniquement) |
 | GET | `/questions/<id>/reponses/` | réponses d’une question |
 | POST | `/questions/<id>/reponses/` 🔒 | répondre |
 | POST | `/questions/<id>/voter/` 🔒 | voter : `{"valeur": 1}` ou `{"valeur": -1}` |
 | POST | `/questions/<id>/favori/` 🔒 | ajouter ou retirer des favoris |
+| PATCH | `/reponses/<id>/` 🔒 | modifier sa réponse (auteur uniquement) |
+| DELETE | `/reponses/<id>/` 🔒 | supprimer sa réponse (auteur uniquement) |
 | POST | `/reponses/<id>/voter/` 🔒 | voter pour une réponse |
 | POST | `/reponses/<id>/accepter/` 🔒 | accepter une réponse (auteur de la question uniquement) |
 | GET | `/categories/` | catégories et nombre de questions |
@@ -207,8 +212,9 @@ De nouvelles migrations sont arrivées : lancez `python manage.py migrate`.
 
 ## Reste à faire
 
-- [ ] Modifier et supprimer ses propres questions et réponses
-- [ ] Adresses de pages (`/questions/12`) pour que l’actualisation et le bouton Retour du navigateur fonctionnent
+- [x] Modifier et supprimer ses propres questions et réponses
+- [x] Adresses de pages (`#/questions/12`) : l’actualisation et le bouton Retour du navigateur fonctionnent
+- [ ] Mise en forme du code dans les questions et réponses (blocs entre trois accents graves)
 - [ ] « Mot de passe oublié » (réinitialisation par email)
 - [ ] Notifications (cloche)
 - [ ] Page de profil

@@ -1,4 +1,5 @@
 /* ---------- Outils partagés entre les pages ---------- */
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const COULEURS = ["#7c5cfc", "#0e9f6e", "#e5484d", "#f59e0b", "#0b5ed7", "#0891b2"];
 
@@ -34,3 +35,68 @@ export const Avatar = ({ name, color = "#0b5ed7", size = 36 }) => (
     {initiales(name)}
   </span>
 );
+
+/* ---------- Message temporaire en bas de l'écran (remplace alert()) ---------- */
+// const [avis, afficherAvis] = useAvis();  puis  afficherAvis("Texte")  et  <Avis texte={avis} />
+export function useAvis(duree = 4000) {
+  const [avis, setAvis] = useState("");
+  const minuteur = useRef(null);
+
+  const afficherAvis = useCallback((texte) => {
+    setAvis(texte);
+    clearTimeout(minuteur.current);
+    minuteur.current = setTimeout(() => setAvis(""), duree);
+  }, [duree]);
+
+  useEffect(() => () => clearTimeout(minuteur.current), []);
+  return [avis, afficherAvis];
+}
+
+export const Avis = ({ texte }) =>
+  texte ? <div className="avis" role="alert">{texte}</div> : null;
+
+/* ---------- Menu du compte (clic sur l'avatar en haut à droite) ---------- */
+const PROFILS = { etudiant: "Étudiant", enseignant: "Enseignant", personnel: "Personnel" };
+
+export function MenuCompte({ user, onLogout }) {
+  const [ouvert, setOuvert] = useState(false);
+  const zone = useRef(null);
+  const nomComplet = `${user?.prenom ?? ""} ${user?.nom ?? ""}`.trim() || user?.username || "Invité";
+
+  // Fermer le menu en cliquant ailleurs ou avec la touche Échap
+  useEffect(() => {
+    if (!ouvert) return;
+    const clicDehors = (e) => { if (!zone.current?.contains(e.target)) setOuvert(false); };
+    const echap = (e) => { if (e.key === "Escape") setOuvert(false); };
+    document.addEventListener("mousedown", clicDehors);
+    document.addEventListener("keydown", echap);
+    return () => {
+      document.removeEventListener("mousedown", clicDehors);
+      document.removeEventListener("keydown", echap);
+    };
+  }, [ouvert]);
+
+  return (
+    <div className="compte" ref={zone}>
+      <button type="button" className="home__avatar-btn" onClick={() => setOuvert((o) => !o)}
+        aria-haspopup="menu" aria-expanded={ouvert} aria-label="Mon compte">
+        <Avatar name={nomComplet} color={couleurPour(user?.username)} size={44} />
+      </button>
+
+      {ouvert && (
+        <div className="compte__menu card" role="menu">
+          <div className="compte__identite">
+            <strong>{nomComplet}</strong>
+            <span>@{user?.username}</span>
+            <span>
+              {PROFILS[user?.profil] ?? ""}{user?.niveau ? ` · ${user.niveau}` : ""}
+            </span>
+          </div>
+          <button type="button" role="menuitem" className="compte__deconnexion" onClick={onLogout}>
+            Se déconnecter
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

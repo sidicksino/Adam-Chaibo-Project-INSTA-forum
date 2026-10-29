@@ -67,7 +67,7 @@ const GradCap = () => (
 );
 
 /* ---------- Page de connexion ---------- */
-export default function LoginPage({ onLogin, onSignup, onForgotPassword }) {
+export default function LoginPage({ message, onLogin, onSignup, onForgotPassword }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -183,6 +183,13 @@ export default function LoginPage({ onLogin, onSignup, onForgotPassword }) {
               Mot de passe oublié ?
             </button>
           </div>
+
+          {/* Message de réussite, par exemple après la création du compte */}
+          {message && !error && (
+            <p className="login__succes" role="status">
+              {message}
+            </p>
+          )}
 
           {error && (
             <p className="login__error" role="alert">

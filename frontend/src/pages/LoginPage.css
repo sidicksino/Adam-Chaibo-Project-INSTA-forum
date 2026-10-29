@@ -197,6 +197,16 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
 }
 .link:hover { text-decoration: underline; }
 
+.login__succes {
+  margin: -8px 0 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #e7f6ec;
+  color: #1e7a45;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
 .login__error {
   margin: -8px 0 18px;
   padding: 10px 14px;

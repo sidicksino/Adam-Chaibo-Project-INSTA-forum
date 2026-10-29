@@ -1,9 +1,11 @@
 
 import { useEffect, useState } from "react";
 import "./AskQuestionPage.css";
-import { listerCategories } from "../api";
+import { listerCategories, lireQuestion } from "../api";
 
-export default function AskQuestionPage({ onSubmit, onBack }) {
+// Sert à poser une question, ou à la modifier quand questionId est fourni.
+export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) {
+  const modification = Boolean(questionId);
   const [titre, setTitre] = useState("");
   const [categorie, setCategorie] = useState("");
   const [description, setDescription] = useState("");
@@ -11,6 +13,8 @@ export default function AskQuestionPage({ onSubmit, onBack }) {
   const [categories, setCategories] = useState([]);
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
+  // En modification, le formulaire reste caché tant que la question n'est pas chargée
+  const [pret, setPret] = useState(!modification);
 
   // Les catégories viennent du serveur (modifiables depuis l'administration Django)
   useEffect(() => {
@@ -18,6 +22,24 @@ export default function AskQuestionPage({ onSubmit, onBack }) {
       .then(setCategories)
       .catch((err) => setErreur(err.message));
   }, []);
+
+  // Modification : on pré-remplit le formulaire avec la question existante
+  useEffect(() => {
+    if (!questionId) return;
+    lireQuestion(questionId)
+      .then((q) => {
+        if (q.auteur.username !== user?.username) {
+          setErreur("Seul l’auteur peut modifier cette question.");
+          return;
+        }
+        setTitre(q.titre);
+        setCategorie(String(q.categorie.id));
+        setDescription(q.description);
+        setTags(q.tags.join(", "));
+        setPret(true);
+      })
+      .catch((err) => setErreur(err.message));
+  }, [questionId, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +62,7 @@ export default function AskQuestionPage({ onSubmit, onBack }) {
           .filter(Boolean)
       });
     } catch (err) {
-      setErreur(err?.message || "Impossible de publier la question. Réessayez.");
+      setErreur(err?.message || "Impossible d’enregistrer la question. Réessayez.");
       setEnvoi(false);
     }
   };
@@ -49,20 +71,26 @@ export default function AskQuestionPage({ onSubmit, onBack }) {
     <div className="question-page">
       <div className="question-container">
         <button className="retour-btn" onClick={onBack}>
-          ← Retour à l'accueil
+          {modification ? "← Retour à la question" : "← Retour à l'accueil"}
         </button>
 
-        <h1>Poser une question</h1>
+        <h1>{modification ? "Modifier la question" : "Poser une question"}</h1>
         <p className="question-intro">
-          Décrivez votre problème pour obtenir de l'aide
-          de la communauté INSTA-FORUM.
+          {modification
+            ? "Corrigez ou complétez votre question. Les réponses déjà publiées sont conservées."
+            : "Décrivez votre problème pour obtenir de l'aide de la communauté INSTA-FORUM."}
         </p>
 
+        {!pret && !erreur && <p className="question-intro">Chargement de la question…</p>}
+        {!pret && erreur && <p className="question-erreur" role="alert">{erreur}</p>}
+
+        {pret && (
         <form onSubmit={handleSubmit} noValidate>
           <label>Titre de la question *</label>
           <input
             type="text"
             placeholder="Ex : Comment utiliser useState dans React ?"
+            maxLength={200}
             value={titre}
             onChange={(e) => setTitre(e.target.value)}
             required
@@ -115,10 +143,13 @@ export default function AskQuestionPage({ onSubmit, onBack }) {
             </button>
 
             <button type="submit" className="publier-btn" disabled={envoi}>
-              {envoi ? "Publication…" : "Publier la question"}
+              {modification
+                ? (envoi ? "Enregistrement…" : "Enregistrer les modifications")
+                : (envoi ? "Publication…" : "Publier la question")}
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

@@ -18,11 +18,18 @@ const effacerJeton = () => {
 };
 
 /* ---------- Requête générique ---------- */
+// Récupère tous les textes d'une erreur Django, même imbriqués
+// (ex. {"tags": {"0": ["Ce champ ne peut contenir plus de 30 caractères."]}}).
+const textes = (valeur) =>
+  typeof valeur === "string" ? [valeur]
+    : Array.isArray(valeur) ? valeur.flatMap(textes)
+    : valeur && typeof valeur === "object" ? Object.values(valeur).flatMap(textes)
+    : [];
+
 // Transforme les erreurs renvoyées par Django en un seul message lisible.
 const messageErreur = (donnees) => {
-  if (!donnees || typeof donnees !== "object") return "Une erreur est survenue. Réessayez.";
-  if (donnees.detail) return donnees.detail;
-  return Object.values(donnees).flat().join(" ");
+  const liste = textes(donnees);
+  return liste.length ? liste.join(" ") : "Une erreur est survenue. Réessayez.";
 };
 
 async function requete(chemin, { methode = "GET", corps } = {}) {
@@ -78,6 +85,17 @@ export const publierQuestion = (donnees) =>
   requete("/questions/", { methode: "POST", corps: donnees });
 
 export const lireQuestion = (id) => requete(`/questions/${id}/`);
+
+// Modifier ou supprimer : réservé à l'auteur (le serveur refuse pour les autres)
+export const modifierQuestion = (id, donnees) =>
+  requete(`/questions/${id}/`, { methode: "PATCH", corps: donnees });
+
+export const supprimerQuestion = (id) => requete(`/questions/${id}/`, { methode: "DELETE" });
+
+export const modifierReponse = (id, contenu) =>
+  requete(`/reponses/${id}/`, { methode: "PATCH", corps: { contenu } });
+
+export const supprimerReponse = (id) => requete(`/reponses/${id}/`, { methode: "DELETE" });
 
 export const listerReponses = (idQuestion) => requete(`/questions/${idQuestion}/reponses/`);
 

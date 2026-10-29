@@ -10,6 +10,7 @@ routeur.register("questions", views.QuestionViewSet, basename="question")
 
 urlpatterns = [
     path("", include(routeur.urls)),
+    path("reponses/<int:pk>/", views.reponse_detail, name="reponse-detail"),
     path("reponses/<int:pk>/accepter/", views.accepter_reponse, name="accepter-reponse"),
     path("reponses/<int:pk>/voter/", views.voter_reponse, name="voter-reponse"),
     path("classement/", views.classement, name="classement"),

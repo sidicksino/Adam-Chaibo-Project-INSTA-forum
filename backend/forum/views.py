@@ -2,16 +2,23 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, F, Sum
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from .models import Categorie, Favori, Question, Reponse, VoteQuestion, VoteReponse
+from .models import Categorie, Favori, Question, Reponse, Tag, VoteQuestion, VoteReponse, VueQuestion
 from .serializers import (
     AuteurSerializer, CategorieSerializer, QuestionSerializer, ReponseSerializer, VoteSerializer,
 )
+
+
+def verifier_auteur(request, objet, action):
+    """Seul l'auteur d'une question ou d'une réponse peut la modifier ou la supprimer."""
+    if objet.auteur_id != request.user.id:
+        raise PermissionDenied(f"Seul l’auteur peut {action}.")
 
 
 def mes_votes(modele_vote, champ, utilisateur, ids):
@@ -62,12 +69,16 @@ class QuestionViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
     """
-    GET  /api/questions/                : toutes les questions, les plus récentes d'abord
-    GET  /api/questions/<id>/           : une question (compte une vue de plus)
-    POST /api/questions/                : publier une question (connexion obligatoire)
+    GET    /api/questions/              : toutes les questions, les plus récentes d'abord
+    GET    /api/questions/<id>/         : une question (compte une vue par membre)
+    POST   /api/questions/              : publier une question (connexion obligatoire)
+    PATCH  /api/questions/<id>/         : modifier sa question (auteur uniquement)
+    DELETE /api/questions/<id>/         : supprimer sa question et ses réponses (auteur uniquement)
     GET  /api/questions/<id>/reponses/  : les réponses à une question
     POST /api/questions/<id>/reponses/  : répondre (connexion obligatoire)
     POST /api/questions/<id>/voter/     : voter pour ou contre la question
@@ -97,11 +108,27 @@ class QuestionViewSet(
         # L'auteur est toujours l'utilisateur connecté, jamais une valeur envoyée par le client.
         serializer.save(auteur=self.request.user)
 
+    def perform_update(self, serializer):
+        verifier_auteur(self.request, serializer.instance, "modifier cette question")
+        serializer.save(date_modification=timezone.now())
+
+    def perform_destroy(self, question):
+        verifier_auteur(self.request, question, "supprimer cette question")
+        # Les réponses, votes, vues et favoris de la question sont supprimés avec elle.
+        question.delete()
+        Tag.objects.filter(questions__isnull=True).delete()
+
     def retrieve(self, request, *args, **kwargs):
         question = self.get_object()
-        # F() fait l'addition dans la base : deux visites simultanées sont bien comptées.
-        Question.objects.filter(pk=question.pk).update(vues=F("vues") + 1)
-        question.vues += 1
+        utilisateur = request.user
+        # Une vue par membre : actualiser la page ou revenir ne compte pas,
+        # et l'auteur qui relit sa propre question non plus.
+        if utilisateur.is_authenticated and utilisateur.id != question.auteur_id:
+            _, nouvelle = VueQuestion.objects.get_or_create(utilisateur=utilisateur, question=question)
+            if nouvelle:
+                # F() fait l'addition dans la base : deux visites simultanées sont bien comptées.
+                Question.objects.filter(pk=question.pk).update(vues=F("vues") + 1)
+                question.vues += 1
         contexte = {
             **self.get_serializer_context(),
             "mes_votes": mes_votes(VoteQuestion, "question", request.user, [question.id]),
@@ -142,6 +169,32 @@ def voter_reponse(request, pk):
     """POST /api/reponses/<id>/voter/ : voter pour ou contre une réponse."""
     reponse = get_object_or_404(Reponse, pk=pk)
     return enregistrer_vote(request, reponse, VoteReponse, "reponse", "réponse")
+
+
+@api_view(["PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
+def reponse_detail(request, pk):
+    """
+    PATCH  /api/reponses/<id>/ : modifier sa réponse (auteur uniquement)
+    DELETE /api/reponses/<id>/ : supprimer sa réponse (auteur uniquement)
+    """
+    reponse = get_object_or_404(Reponse.objects.select_related("question", "auteur"), pk=pk)
+
+    if request.method == "DELETE":
+        verifier_auteur(request, reponse, "supprimer cette réponse")
+        with transaction.atomic():
+            # Supprimer la réponse acceptée : la question n'est plus résolue.
+            if reponse.acceptee:
+                reponse.question.resolue = False
+                reponse.question.save(update_fields=["resolue"])
+            reponse.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    verifier_auteur(request, reponse, "modifier cette réponse")
+    serializer = ReponseSerializer(reponse, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(date_modification=timezone.now())
+    return Response(serializer.data)
 
 
 @api_view(["POST"])

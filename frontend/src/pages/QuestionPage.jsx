@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import "./HomePage.css";      // styles communs (barre du haut, cartes, tags, avatars)
 import "./QuestionPage.css";  // styles propres à cette page
 import {
-  accepterReponse, basculerFavori, listerReponses, lireQuestion, publierReponse, voterQuestion, voterReponse,
+  accepterReponse, basculerFavori, listerReponses, lireQuestion, modifierReponse, publierReponse,
+  supprimerQuestion, supprimerReponse, voterQuestion, voterReponse,
 } from "../api";
-import { Avatar, couleurPour, ilYA, nomCourt, pluriel } from "../commun";
+import { Avatar, Avis, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
 
 const GradCap = () => (
   <svg width="40" height="26" viewBox="0 0 160 100" aria-hidden="true">
@@ -48,22 +49,28 @@ function Votes({ score, monVote, estAMoi, nom, onVoter }) {
   );
 }
 
+// « • modifiée » ; la date exacte s'affiche au survol
+const Modifiee = ({ date }) =>
+  date ? (
+    <>
+      <span>•</span>
+      <span title={`Modifiée le ${new Date(date).toLocaleString("fr-FR")}`}>modifiée {ilYA(date)}</span>
+    </>
+  ) : null;
+
 /* ---------- Page de détail d'une question ---------- */
-export default function QuestionPage({ id, user, onBack, onLogout }) {
+export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLogout }) {
   const [question, setQuestion] = useState(null);
   const [reponses, setReponses] = useState([]);
   const [erreur, setErreur] = useState("");
   const [contenu, setContenu] = useState("");
   const [erreurReponse, setErreurReponse] = useState("");
   const [envoi, setEnvoi] = useState(false);
-
-  // En développement, React exécute useEffect deux fois : ce repère évite de compter deux vues.
-  const dejaCharge = useRef(null);
+  const [avis, afficherAvis] = useAvis();
+  // Réponse en cours de modification : { id, texte, erreur, envoi } ou null
+  const [edition, setEdition] = useState(null);
 
   useEffect(() => {
-    if (dejaCharge.current === id) return;
-    dejaCharge.current = id;
-
     Promise.all([lireQuestion(id), listerReponses(id)])
       .then(([q, r]) => {
         setQuestion(q);
@@ -73,6 +80,50 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
   }, [id]);
 
   const estAuteur = question && user && question.auteur.username === user.username;
+  const estAMoi = (reponse) => reponse.auteur.username === user?.username;
+
+  const handleSupprimerQuestion = async () => {
+    const message = reponses.length
+      ? `Supprimer cette question et ses ${pluriel(reponses.length, "réponse")} ? Cette action est définitive.`
+      : "Supprimer cette question ? Cette action est définitive.";
+    if (!window.confirm(message)) return;
+    try {
+      await supprimerQuestion(id);
+      onDeleted();
+    } catch (err) {
+      afficherAvis(err.message);
+    }
+  };
+
+  const handleEnregistrerReponse = async (e) => {
+    e.preventDefault();
+    if (!edition.texte.trim()) {
+      setEdition((ed) => ({ ...ed, erreur: "La réponse ne peut pas être vide." }));
+      return;
+    }
+    setEdition((ed) => ({ ...ed, envoi: true, erreur: "" }));
+    try {
+      const modifiee = await modifierReponse(edition.id, edition.texte.trim());
+      // On garde notre vote, que le serveur ne renvoie pas ici
+      setReponses((liste) => liste.map((r) => (r.id === modifiee.id ? { ...r, ...modifiee, mon_vote: r.mon_vote } : r)));
+      setEdition(null);
+    } catch (err) {
+      setEdition((ed) => ({ ...ed, envoi: false, erreur: err.message }));
+    }
+  };
+
+  const handleSupprimerReponse = async (reponse) => {
+    if (!window.confirm("Supprimer votre réponse ? Cette action est définitive.")) return;
+    try {
+      await supprimerReponse(reponse.id);
+      setReponses((liste) => liste.filter((r) => r.id !== reponse.id));
+      // Supprimer la réponse acceptée remet la question « non résolue » (comme sur le serveur)
+      setQuestion((q) => ({ ...q, reponses: q.reponses - 1, resolue: reponse.acceptee ? false : q.resolue }));
+      afficherAvis("Votre réponse a été supprimée.");
+    } catch (err) {
+      afficherAvis(err.message);
+    }
+  };
 
   const handleRepondre = async (e) => {
     e.preventDefault();
@@ -103,7 +154,7 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
       setReponses(await listerReponses(id));
       setQuestion((q) => ({ ...q, resolue: modifiee.acceptee }));
     } catch (err) {
-      alert(err.message);
+      afficherAvis(err.message);
     }
   };
 
@@ -113,7 +164,7 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
       const { votes, mon_vote } = await voterQuestion(id, valeur);
       setQuestion((q) => ({ ...q, votes, mon_vote }));
     } catch (err) {
-      alert(err.message);
+      afficherAvis(err.message);
     }
   };
 
@@ -122,7 +173,7 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
       const { favori } = await basculerFavori(id);
       setQuestion((q) => ({ ...q, favori }));
     } catch (err) {
-      alert(err.message);
+      afficherAvis(err.message);
     }
   };
 
@@ -132,23 +183,19 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
       // L'ordre n'est pas modifié tout de suite pour que la réponse ne « saute » pas sous la souris.
       setReponses((liste) => liste.map((r) => (r.id === reponse.id ? { ...r, votes, mon_vote } : r)));
     } catch (err) {
-      alert(err.message);
+      afficherAvis(err.message);
     }
   };
-
-  const fullName = user ? `${user.prenom ?? ""} ${user.nom ?? ""}`.trim() : "Invité";
 
   return (
     <div className="home">
       {/* ===== Barre du haut ===== */}
       <header className="home__nav">
-        <a className="home__logo" href="/" onClick={(e) => { e.preventDefault(); onBack(); }}>
+        <a className="home__logo" href="#/">
           <GradCap />
           <span>INSTA-<b>FORUM</b></span>
         </a>
-        <button className="home__avatar-btn" onClick={onLogout} title="Se déconnecter" aria-label="Se déconnecter">
-          <Avatar name={fullName} size={44} />
-        </button>
+        <MenuCompte user={user} onLogout={onLogout} />
       </header>
 
       <main className="detail">
@@ -184,6 +231,7 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
                   color={couleurPour(question.auteur.username)} size={24} />
                 <span className="question__author">{nomCourt(question.auteur)}</span>
                 <span>•</span><span>{ilYA(question.date_creation)}</span>
+                <Modifiee date={question.date_modification} />
                 <span>•</span><span>{pluriel(question.vues, "vue")}</span>
               </div>
 
@@ -193,6 +241,14 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
                 <span className="tag">{question.categorie.nom}</span>
                 {question.tags.map((t) => <span key={t} className="tag">{t}</span>)}
               </div>
+
+              {/* Modifier / supprimer : réservé à l'auteur */}
+              {estAuteur && (
+                <div className="detail__outils">
+                  <button type="button" onClick={onEdit}>Modifier</button>
+                  <button type="button" className="is-danger" onClick={handleSupprimerQuestion}>Supprimer</button>
+                </div>
+              )}
               </div>
             </article>
 
@@ -211,20 +267,50 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
                   nom="réponse" onVoter={(valeur) => handleVoterReponse(r, valeur)} />
                 <div className="detail__contenu">
                 {r.acceptee && <span className="detail__badge">✓ Réponse acceptée</span>}
-                <p className="detail__texte">{r.contenu}</p>
+
+                {edition?.id === r.id ? (
+                  /* Modification de sa propre réponse, directement dans la page */
+                  <form className="detail__edition" onSubmit={handleEnregistrerReponse} noValidate>
+                    <textarea rows="5" value={edition.texte} aria-label="Modifier votre réponse" autoFocus
+                      onChange={(e) => setEdition((ed) => ({ ...ed, texte: e.target.value }))} />
+                    {edition.erreur && <p className="detail__erreur" role="alert">{edition.erreur}</p>}
+                    <div className="detail__outils">
+                      <button type="button" onClick={() => setEdition(null)}>Annuler</button>
+                      <button type="submit" className="is-principal" disabled={edition.envoi}>
+                        {edition.envoi ? "Enregistrement…" : "Enregistrer"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="detail__texte">{r.contenu}</p>
+                )}
+
                 <div className="detail__pied">
                   <div className="question__meta">
                     <Avatar name={`${r.auteur.prenom} ${r.auteur.nom}`}
                       color={couleurPour(r.auteur.username)} size={24} />
                     <span className="question__author">{nomCourt(r.auteur)}</span>
                     <span>•</span><span>{ilYA(r.date_creation)}</span>
+                    <Modifiee date={r.date_modification} />
                   </div>
-                  {/* Seul l'auteur de la question peut choisir la bonne réponse */}
-                  {estAuteur && (
-                    <button type="button" className="detail__accepter" onClick={() => handleAccepter(r)}>
-                      {r.acceptee ? "Retirer l’acceptation" : "Accepter cette réponse"}
-                    </button>
-                  )}
+                  <div className="detail__outils">
+                    {estAMoi(r) && edition?.id !== r.id && (
+                      <>
+                        <button type="button" onClick={() => setEdition({ id: r.id, texte: r.contenu, erreur: "", envoi: false })}>
+                          Modifier
+                        </button>
+                        <button type="button" className="is-danger" onClick={() => handleSupprimerReponse(r)}>
+                          Supprimer
+                        </button>
+                      </>
+                    )}
+                    {/* Seul l'auteur de la question peut choisir la bonne réponse */}
+                    {estAuteur && (
+                      <button type="button" className="detail__accepter" onClick={() => handleAccepter(r)}>
+                        {r.acceptee ? "Retirer l’acceptation" : "Accepter cette réponse"}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 </div>
               </article>
@@ -248,6 +334,7 @@ export default function QuestionPage({ id, user, onBack, onLogout }) {
           </>
         )}
       </main>
+      <Avis texte={avis} />
     </div>
   );
 }

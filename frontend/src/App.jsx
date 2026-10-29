@@ -1,120 +1,211 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import AskQuestionPage from "./pages/AskQuestionPage";
 import QuestionPage from "./pages/QuestionPage";
-import { connecter, deconnecter, inscrire, publierQuestion, utilisateurConnecte } from "./api";
+import {
+  connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, utilisateurConnecte,
+} from "./api";
 
 // Anciennes données enregistrées dans le navigateur : tout est désormais sur le serveur.
 localStorage.removeItem("insta_users");
 localStorage.removeItem("insta_questions");
 
+/* ---------- Adresses des pages ----------
+   L'adresse est placée après le « # » (ex. http://localhost:5173/#/questions/12) :
+   actualiser la page ou utiliser le bouton Retour du navigateur fonctionne,
+   et aucun réglage n'est nécessaire sur le serveur qui héberge le site. */
+
+// Menus de la page d'accueil et leur adresse
+const MENUS = {
+  "Accueil": "/",
+  "Questions": "/questions",
+  "Catégories": "/categories",
+  "Mes questions": "/mes-questions",
+  "Favoris": "/favoris",
+  "Classement": "/classement",
+};
+
+const lireAdresse = () => window.location.hash.replace(/^#/, "") || "/";
+
+const aller = (chemin) => {
+  window.location.hash = chemin;
+};
+
+// Transforme l'adresse en page à afficher
+function analyser(adresse) {
+  const [chemin, recherche = ""] = adresse.split("?");
+  const parametres = new URLSearchParams(recherche);
+
+  if (chemin === "/connexion") return { page: "connexion" };
+  if (chemin === "/inscription") return { page: "inscription" };
+  if (chemin === "/poser") return { page: "poser" };
+
+  const detail = chemin.match(/^\/questions\/(\d+)$/);
+  if (detail) return { page: "question", id: Number(detail[1]) };
+
+  const modification = chemin.match(/^\/questions\/(\d+)\/modifier$/);
+  if (modification) return { page: "modifier", id: Number(modification[1]) };
+
+  const menu = Object.keys(MENUS).find((nom) => MENUS[nom] === chemin);
+  if (menu) {
+    const categorie = Number(parametres.get("categorie")) || null;
+    return { page: "accueil", menu, categorie: menu === "Questions" ? categorie : null };
+  }
+
+  // Adresse inconnue : on affiche l'accueil
+  return { page: "accueil", menu: "Accueil", categorie: null };
+}
+
+const TITRES = {
+  connexion: "Connexion",
+  inscription: "Créer un compte",
+  poser: "Poser une question",
+  modifier: "Modifier la question",
+  question: "Question",
+};
+
 export default function App() {
-  const [page, setPage] = useState("login");
+  const [adresse, setAdresse] = useState(lireAdresse);
   const [currentUser, setCurrentUser] = useState(null);
   const [chargement, setChargement] = useState(true);
-  // Identifiant de la question ouverte sur la page de détail
-  const [questionId, setQuestionId] = useState(null);
-  // Menu choisi sur la page d'accueil, conservé au retour d'une question
-  const [vueAccueil, setVueAccueil] = useState({ menu: "Accueil", categorie: null });
+  // Message affiché sur la page de connexion (ex. après une inscription réussie)
+  const [messageConnexion, setMessageConnexion] = useState("");
+  // Dernière vue de l'accueil, pour que « Retour » y ramène (ex. #/favoris)
+  const derniereVue = useRef("/");
+
+  const route = analyser(adresse);
+
+  // Suivre les changements d'adresse (liens, bouton Retour du navigateur)
+  useEffect(() => {
+    const surChangement = () => {
+      setAdresse(lireAdresse());
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("hashchange", surChangement);
+    return () => window.removeEventListener("hashchange", surChangement);
+  }, []);
 
   // Au chargement : si un jeton est enregistré, on reconnecte l'utilisateur.
   useEffect(() => {
     utilisateurConnecte().then((utilisateur) => {
-      if (utilisateur) {
-        setCurrentUser(utilisateur);
-        setPage("home");
-      }
+      if (utilisateur) setCurrentUser(utilisateur);
       setChargement(false);
     });
   }, []);
 
+  if (route.page === "accueil") derniereVue.current = adresse;
+
+  // Titre de l'onglet du navigateur
+  const pageAffichee = currentUser || ["inscription"].includes(route.page) ? route.page : "connexion";
+  useEffect(() => {
+    const titre = pageAffichee === "accueil" ? (route.menu === "Accueil" ? "" : route.menu) : TITRES[pageAffichee];
+    document.title = titre ? `${titre} — INSTA-FORUM` : "INSTA-FORUM";
+  }, [pageAffichee, route.menu]);
+
+  // Déjà connecté : les pages de connexion et d'inscription renvoient à l'accueil.
+  useEffect(() => {
+    if (currentUser && ["connexion", "inscription"].includes(route.page)) aller("/");
+  }, [currentUser, route.page]);
+
   // Inscription (POST /api/comptes/inscription/)
   const handleRegister = async (data) => {
     await inscrire(data);
-    alert("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
-    setPage("login");
+    setMessageConnexion("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
+    aller("/connexion");
   };
 
   // Connexion (POST /api/comptes/connexion/)
+  // L'utilisateur reste sur la page qu'il voulait ouvrir (ex. un lien vers une question).
   const handleLogin = async (identifiants) => {
     const utilisateur = await connecter(identifiants);
+    setMessageConnexion("");
     setCurrentUser(utilisateur);
-    setPage("home");
   };
 
   // Déconnexion (POST /api/comptes/deconnexion/)
   const handleLogout = async () => {
     await deconnecter().catch(() => {});
     setCurrentUser(null);
-    setVueAccueil({ menu: "Accueil", categorie: null });
-    setPage("login");
+    derniereVue.current = "/";
+    aller("/connexion");
   };
 
-  // Publier une question (POST /api/questions/)
+  // Publier une question (POST /api/questions/), puis l'ouvrir.
   // En cas d'erreur, le message est affiché par AskQuestionPage.
   const handleAddQuestion = async (data) => {
-    await publierQuestion(data);
-    setPage("home");
+    const question = await publierQuestion(data);
+    aller(`/questions/${question.id}`);
   };
 
   if (chargement) return null;
 
-  if (page === "signup") {
+  // ===== Pages accessibles sans être connecté =====
+  if (!currentUser) {
+    if (route.page === "inscription") {
+      return <SignupPage onSubmit={handleRegister} onGoLogin={() => aller("/connexion")} />;
+    }
     return (
-      <SignupPage
-        onSubmit={handleRegister}
-        onGoLogin={() => setPage("login")}
+      <LoginPage
+        message={messageConnexion}
+        onLogin={handleLogin}
+        onSignup={() => aller("/inscription")}
+        onForgotPassword={() =>
+          alert("La réinitialisation du mot de passe n’est pas encore disponible. Contactez un administrateur.")
+        }
       />
     );
   }
 
-  if (page === "home" && currentUser) {
-    return (
-      <HomePage
-        user={currentUser}
-        vue={vueAccueil}
-        onChangerVue={setVueAccueil}
-        onLogout={handleLogout}
-        onAskQuestion={() => setPage("askQuestion")}
-        onOpenQuestion={(id) => {
-          setQuestionId(id);
-          setPage("question");
-        }}
-      />
-    );
-  }
-
-  if (page === "question" && currentUser) {
+  // ===== Pages réservées aux membres connectés =====
+  if (route.page === "question") {
     return (
       <QuestionPage
-        id={questionId}
+        key={route.id}
+        id={route.id}
         user={currentUser}
-        onBack={() => setPage("home")}
+        onBack={() => aller(derniereVue.current)}
+        onEdit={() => aller(`/questions/${route.id}/modifier`)}
+        onDeleted={() => aller(derniereVue.current)}
         onLogout={handleLogout}
       />
     );
   }
 
-  if (page === "askQuestion" && currentUser) {
+  if (route.page === "poser") {
+    return <AskQuestionPage onSubmit={handleAddQuestion} onBack={() => aller(derniereVue.current)} />;
+  }
+
+  // Modifier une question (PATCH /api/questions/<id>/), puis revenir dessus
+  if (route.page === "modifier") {
     return (
       <AskQuestionPage
-        onSubmit={handleAddQuestion}
-        onBack={() => setPage("home")}
+        key={route.id}
+        questionId={route.id}
+        user={currentUser}
+        onSubmit={async (data) => {
+          await modifierQuestion(route.id, data);
+          aller(`/questions/${route.id}`);
+        }}
+        onBack={() => aller(`/questions/${route.id}`)}
       />
     );
   }
 
+  // Accueil et ses menus
   return (
-    <LoginPage
-      onLogin={handleLogin}
-      onSignup={() => setPage("signup")}
-      onForgotPassword={() =>
-        alert("Fonction à venir")
+    <HomePage
+      user={currentUser}
+      vue={route}
+      onChangerVue={({ menu, categorie }) =>
+        aller(MENUS[menu] + (menu === "Questions" && categorie ? `?categorie=${categorie}` : ""))
       }
+      onLogout={handleLogout}
+      onAskQuestion={() => aller("/poser")}
+      onOpenQuestion={(id) => aller(`/questions/${id}`)}
     />
   );
 }

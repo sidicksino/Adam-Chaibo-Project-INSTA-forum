@@ -43,6 +43,8 @@ class Question(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="questions", verbose_name="auteur"
     )
     date_creation = models.DateTimeField("date de création", auto_now_add=True)
+    # Renseignée quand l'auteur modifie sa question (affiche « modifiée »)
+    date_modification = models.DateTimeField("date de modification", null=True, blank=True)
     votes = models.IntegerField("votes", default=0)
     vues = models.PositiveIntegerField("vues", default=0)
     resolue = models.BooleanField("résolue", default=False)
@@ -65,6 +67,7 @@ class Reponse(models.Model):
     )
     contenu = models.TextField("contenu")
     date_creation = models.DateTimeField("date de création", auto_now_add=True)
+    date_modification = models.DateTimeField("date de modification", null=True, blank=True)
     # Réponse choisie par l'auteur de la question : elle marque la question comme résolue.
     acceptee = models.BooleanField("acceptée", default=False)
     votes = models.IntegerField("votes", default=0)
@@ -77,6 +80,25 @@ class Reponse(models.Model):
 
     def __str__(self):
         return f"Réponse de {self.auteur} à « {self.question} »"
+
+
+class VueQuestion(models.Model):
+    """Une personne qui a ouvert une question : chaque membre ne compte qu'une fois."""
+
+    utilisateur = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="utilisateur"
+    )
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="liste_vues", verbose_name="question"
+    )
+    date = models.DateTimeField("date", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "vue"
+        verbose_name_plural = "vues"
+        constraints = [
+            models.UniqueConstraint(fields=["utilisateur", "question"], name="une_vue_par_personne"),
+        ]
 
 
 class Favori(models.Model):

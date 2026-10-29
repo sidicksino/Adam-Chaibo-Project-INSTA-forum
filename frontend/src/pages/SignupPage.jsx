@@ -251,8 +251,9 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
             <label className="check check--top">
               <input type="checkbox" checked={values.terms} onChange={set("terms")} />
               <span>
-                J’accepte les <a href="#conditions">conditions d’utilisation</a> et la{" "}
-                <a href="#confidentialite">politique de confidentialité</a> du forum.
+                {/* À transformer en liens quand ces pages existeront */}
+                J’accepte les <strong>conditions d’utilisation</strong> et la{" "}
+                <strong>politique de confidentialité</strong> du forum.
               </span>
             </label>
             {errors.terms && <p className="field__error" role="alert">{errors.terms}</p>}

@@ -33,7 +33,11 @@ class QuestionSerializer(serializers.ModelSerializer):
     )
     # Écriture : une liste de noms ; la lecture est gérée dans to_representation
     tags = serializers.ListField(
-        child=serializers.CharField(max_length=30, allow_blank=True),
+        child=serializers.CharField(
+            max_length=30,
+            allow_blank=True,
+            error_messages={"max_length": "Un tag ne peut pas dépasser 30 caractères."},
+        ),
         required=False,
         write_only=True,
         max_length=5,
@@ -47,9 +51,10 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = [
             "id", "titre", "description", "categorie", "categorie_id", "tags",
-            "auteur", "date_creation", "votes", "vues", "resolue", "reponses", "mon_vote", "favori",
+            "auteur", "date_creation", "date_modification", "votes", "vues", "resolue", "reponses",
+            "mon_vote", "favori",
         ]
-        read_only_fields = ["date_creation", "votes", "vues", "resolue"]
+        read_only_fields = ["date_creation", "date_modification", "votes", "vues", "resolue"]
 
     def get_reponses(self, question):
         # nb_reponses est calculé dans la vue ; une question qui vient d'être créée n'en a aucune.
@@ -84,13 +89,25 @@ class QuestionSerializer(serializers.ModelSerializer):
                 uniques.setdefault(nom.lower(), nom)
         return list(uniques.values())
 
+    @staticmethod
+    def _tags(noms):
+        # Réutilise un tag existant (« react » et « React » sont le même tag)
+        return [Tag.objects.filter(nom__iexact=nom).first() or Tag.objects.create(nom=nom) for nom in noms]
+
     def create(self, donnees):
         noms_tags = donnees.pop("tags", [])
         question = Question.objects.create(**donnees)
-        for nom in noms_tags:
-            # Réutilise un tag existant (« react » et « React » sont le même tag)
-            tag = Tag.objects.filter(nom__iexact=nom).first() or Tag.objects.create(nom=nom)
-            question.tags.add(tag)
+        question.tags.set(self._tags(noms_tags))
+        return question
+
+    def update(self, question, donnees):
+        # Les tags ne sont remplacés que s'ils sont envoyés
+        noms_tags = donnees.pop("tags", None)
+        question = super().update(question, donnees)
+        if noms_tags is not None:
+            question.tags.set(self._tags(noms_tags))
+            # Les tags qui ne servent plus à aucune question sont supprimés
+            Tag.objects.filter(questions__isnull=True).delete()
         return question
 
     def to_representation(self, question):
@@ -105,8 +122,8 @@ class ReponseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reponse
-        fields = ["id", "contenu", "auteur", "date_creation", "acceptee", "votes", "mon_vote"]
-        read_only_fields = ["date_creation", "acceptee", "votes"]
+        fields = ["id", "contenu", "auteur", "date_creation", "date_modification", "acceptee", "votes", "mon_vote"]
+        read_only_fields = ["date_creation", "date_modification", "acceptee", "votes"]
         extra_kwargs = {
             "contenu": {"error_messages": {"blank": "Écrivez votre réponse avant de la publier."}},
         }
