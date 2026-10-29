@@ -13,6 +13,7 @@ On y pose ses questions, on répond à celles des autres, on vote pour les meill
 - **Profil des membres** : cliquer sur un nom ouvre son profil (questions, réponses, statistiques, rang au classement). Sur son propre profil, l’onglet « Paramètres » permet de modifier ses informations et son mot de passe.
 - **Mot de passe oublié** : lien envoyé par email (valable 1 heure, utilisable une seule fois) pour choisir un nouveau mot de passe.
 - **Notifications** (🔔) : prévient quand quelqu’un répond à votre question ou accepte votre réponse ; pastille rouge, vérification toutes les 30 s, « Tout marquer comme lu ».
+- **Captures d’écran** : jusqu’à 5 images par question (5 Mo max). Elles sont redimensionnées (1600 px) et converties en WebP à l’envoi, avec une miniature de 400 px affichée sur les cartes de l’accueil.
 - **Code mis en forme** : le code entouré de ``` s’affiche en couleur (Python, Java, C, C++, C#, JavaScript, TypeScript, PHP, SQL, HTML, CSS, JSON, terminal), avec un bouton « Copier » ; `code` dans une phrase est aussi mis en valeur. Le bouton « </> Code » des formulaires insère le bloc.
 - **Réponse acceptée** : l’auteur de la question choisit la bonne réponse, la question passe en *Résolue*.
 - **Votes** : pour (▲) ou contre (▼) une question ou une réponse ; impossible de voter pour soi-même.
@@ -208,6 +209,8 @@ Toutes les adresses commencent par `/api/`. 🔒 = connexion obligatoire (en-tê
 | POST | `/reponses/<id>/accepter/` 🔒 | accepter une réponse (auteur de la question uniquement) |
 | GET | `/notifications/` 🔒 | 30 dernières notifications et nombre de non lues |
 | POST | `/notifications/lire/` 🔒 | tout marquer comme lu, ou une seule avec `{"id": 12}` |
+| POST | `/questions/<id>/captures/` 🔒 | ajouter des captures (`images`, multipart ; auteur uniquement) |
+| DELETE | `/captures/<id>/` 🔒 | supprimer une capture (auteur de la question) |
 | GET | `/categories/` | catégories et nombre de questions |
 | GET | `/statistiques/` | chiffres de la page d’accueil |
 | GET | `/classement/` | classement des membres |
@@ -217,7 +220,7 @@ Revoter la même valeur, ou cliquer de nouveau sur « favori » ou « accepter �
 
 ## Tests automatisés
 
-49 tests vérifient les règles du forum : inscription et connexion, mot de passe oublié, une vue par membre (l’auteur n’est pas compté), pas de vote pour soi-même, une seule réponse acceptée, seul l’auteur modifie ou supprime, favoris, notifications, classement, tri des questions et données de démonstration.
+55 tests vérifient les règles du forum : inscription et connexion, mot de passe oublié, une vue par membre (l’auteur n’est pas compté), pas de vote pour soi-même, une seule réponse acceptée, seul l’auteur modifie ou supprime, favoris, notifications, classement, tri des questions et données de démonstration.
 
 ```bash
 cd backend

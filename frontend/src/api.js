@@ -1,5 +1,8 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
+export const urlMedia = (chemin) =>
+  chemin.startsWith("http") ? chemin : `${API_URL.replace(/\/api\/?$/, "")}${chemin}`;
+
 const CLE_JETON = "insta_jeton";
 
 export const lireJeton = () =>
@@ -81,6 +84,8 @@ export const lireQuestion = (id) => requete(`/questions/${id}/`);
 
 export const modifierQuestion = (id, donnees) =>
   requete(`/questions/${id}/`, { methode: "PATCH", corps: donnees });
+
+export const supprimerCapture = (id) => requete(`/captures/${id}/`, { methode: "DELETE" });
 
 export async function televerserCaptures(questionId, fichiers) {
   if (!fichiers || fichiers.length === 0) return [];

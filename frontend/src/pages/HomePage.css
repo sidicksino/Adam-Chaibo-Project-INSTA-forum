@@ -374,6 +374,63 @@
   font-size: 0.8125rem;
   font-weight: 700;
 }
+.qcarte__corps { display: flex; gap: 18px; align-items: flex-start; }
+.qcarte__texte { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.qcarte__apercu {
+  position: relative;
+  flex: none;
+  width: 120px;
+  height: 90px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--h-line);
+  border-radius: 12px;
+  background: #f1f4f9;
+}
+.qcarte__apercu img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
+.qcarte__apercu:hover img { transform: scale(1.04); }
+.qcarte__apercu span {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(15, 42, 92, 0.75);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.qcarte__etiquettes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.qcarte__joints { display: flex; flex-wrap: wrap; gap: 8px; }
+.qcarte__joint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--h-line);
+  border-radius: 8px;
+  background: #f8fafd;
+  color: var(--h-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.qcarte__joint svg { color: var(--h-gray); }
+
+.difficulte {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.difficulte.is-debutant { background: #e3f6ec; color: #11804c; }
+.difficulte.is-intermediaire { background: #fff3e2; color: #b45309; }
+.difficulte.is-avance { background: #fdecec; color: #b42318; }
+
 .qcarte__titre { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; line-height: 1.35; color: var(--h-ink); }
 
 .qcarte__titre button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; }
@@ -589,5 +646,7 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
   .home__tabs button { padding: 9px 16px; font-size: 0.875rem; }
   .qcarte { padding: 16px; }
   .qcarte__titre { font-size: 1.0625rem; }
+  .qcarte__corps { gap: 12px; }
+  .qcarte__apercu { width: 76px; height: 76px; border-radius: 10px; }
   .qcarte__pied { flex-direction: column; align-items: flex-start; }
 }

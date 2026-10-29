@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 
 class Categorie(models.Model):
@@ -194,6 +196,7 @@ class CaptureQuestion(models.Model):
         Question, on_delete=models.CASCADE, related_name="captures", verbose_name="question"
     )
     image = models.ImageField("image", upload_to="captures/")
+    miniature = models.ImageField("miniature", upload_to="captures/miniatures/", blank=True)
     date_ajout = models.DateTimeField("date d'ajout", auto_now_add=True)
 
     class Meta:
@@ -203,3 +206,10 @@ class CaptureQuestion(models.Model):
 
     def __str__(self):
         return f"Capture pour « {self.question} »"
+
+
+@receiver(post_delete, sender=CaptureQuestion)
+def supprimer_fichiers_capture(sender, instance, **kwargs):
+    for fichier in (instance.image, instance.miniature):
+        if fichier:
+            fichier.delete(save=False)

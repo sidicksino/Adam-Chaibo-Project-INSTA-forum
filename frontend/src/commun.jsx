@@ -22,6 +22,28 @@ export function ilYA(date) {
 
 export const lienProfil = (username) => `#/membres/${encodeURIComponent(username)}`;
 
+const DIFFICULTES = {
+  debutant: { texte: "Débutant", barres: 1 },
+  intermediaire: { texte: "Intermédiaire", barres: 2 },
+  avance: { texte: "Avancé", barres: 3 },
+};
+
+export function Difficulte({ niveau }) {
+  const d = DIFFICULTES[niveau];
+  if (!d) return null;
+  return (
+    <span className={`difficulte is-${niveau}`} title={`Difficulté : ${d.texte}`}>
+      <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <rect key={i} x={i * 5} y={8 - i * 4} width="3.5" height={4 + i * 4} rx="1"
+            fill="currentColor" opacity={i < d.barres ? 1 : 0.25} />
+        ))}
+      </svg>
+      {d.texte}
+    </span>
+  );
+}
+
 export const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
 const initiales = (nom = "") =>

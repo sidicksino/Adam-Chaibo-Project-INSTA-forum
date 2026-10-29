@@ -1,4 +1,11 @@
-from io import StringIO
+import os
+import shutil
+import tempfile
+from io import BytesIO, StringIO
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+from PIL import Image
 
 from django.core.management import call_command
 from django.db.models import F
@@ -7,7 +14,7 @@ from rest_framework.test import APIClient, APITestCase
 
 from comptes.models import Utilisateur
 
-from .models import Categorie, Notification, Question, Reponse, Tag
+from .models import CaptureQuestion, Categorie, Notification, Question, Reponse, Tag
 
 
 class BaseForum(APITestCase):
@@ -291,6 +298,67 @@ class ProfilMembreTests(BaseForum):
 
     def test_membre_inconnu(self):
         self.assertEqual(self.client_de().get("/api/membres/personne/").status_code, 404)
+
+
+def image_test(nom="capture.png", largeur=3000, hauteur=2000, format_="PNG"):
+    tampon = BytesIO()
+    Image.new("RGB", (largeur, hauteur), (30, 90, 200)).save(tampon, format_)
+    return SimpleUploadedFile(nom, tampon.getvalue(), content_type=f"image/{format_.lower()}")
+
+
+class CapturesTests(BaseForum):
+    def setUp(self):
+        super().setUp()
+        self.dossier = tempfile.mkdtemp()
+        reglages = override_settings(MEDIA_ROOT=self.dossier)
+        reglages.enable()
+        self.addCleanup(reglages.disable)
+        self.addCleanup(shutil.rmtree, self.dossier, ignore_errors=True)
+        self.question_id = self.poser()
+
+    def envoyer(self, utilisateur, *fichiers):
+        return self.client_de(utilisateur).post(
+            f"/api/questions/{self.question_id}/captures/", {"images": list(fichiers)}, format="multipart"
+        )
+
+    def test_image_compressee_et_miniature(self):
+        reponse = self.envoyer(self.awa, image_test())
+        self.assertEqual(reponse.status_code, 201, reponse.data)
+        capture = CaptureQuestion.objects.get()
+        with Image.open(capture.image.path) as grande, Image.open(capture.miniature.path) as petite:
+            self.assertEqual((grande.format, grande.size), ("WEBP", (1600, 1067)))
+            self.assertEqual((petite.format, petite.size), ("WEBP", (400, 267)))
+        self.assertTrue(reponse.data[0]["miniature"].endswith(".webp"))
+
+    def test_fichier_qui_n_est_pas_une_image(self):
+        faux = SimpleUploadedFile("virus.png", b"pas une image", content_type="image/png")
+        reponse = self.envoyer(self.awa, faux)
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(reponse.data["detail"], "« virus.png » n’est pas une image valide.")
+        self.assertFalse(CaptureQuestion.objects.exists())
+
+    def test_trop_lourde(self):
+        lourde = SimpleUploadedFile("lourde.png", b"0" * (5 * 1024 * 1024 + 1), content_type="image/png")
+        self.assertEqual(self.envoyer(self.awa, lourde).data["detail"], "« lourde.png » dépasse 5 Mo.")
+
+    def test_cinq_captures_au_plus(self):
+        self.assertEqual(self.envoyer(self.awa, *[image_test(largeur=50, hauteur=50) for _ in range(5)]).status_code, 201)
+        reponse = self.envoyer(self.awa, image_test(largeur=50, hauteur=50))
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(CaptureQuestion.objects.count(), 5)
+
+    def test_seul_l_auteur_ajoute_ou_supprime(self):
+        self.assertEqual(self.envoyer(self.ali, image_test()).status_code, 403)
+        capture_id = self.envoyer(self.awa, image_test()).data[0]["id"]
+        self.assertEqual(self.client_de(self.ali).delete(f"/api/captures/{capture_id}/").status_code, 403)
+        self.assertEqual(self.client_de(self.awa).delete(f"/api/captures/{capture_id}/").status_code, 204)
+
+    def test_fichiers_effaces_du_disque(self):
+        self.envoyer(self.awa, image_test())
+        capture = CaptureQuestion.objects.get()
+        chemins = [capture.image.path, capture.miniature.path]
+        self.client_de(self.awa).delete(f"/api/questions/{self.question_id}/")
+        self.assertFalse(any(os.path.exists(c) for c in chemins))
 
 
 class DonneesDemonstrationTests(APITestCase):

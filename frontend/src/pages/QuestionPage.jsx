@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import "./HomePage.css";
 import "./QuestionPage.css";
 import {
-  accepterReponse, basculerFavori, listerReponses, lireQuestion, modifierReponse, publierReponse,
-  supprimerQuestion, supprimerReponse, voterQuestion, voterReponse,
+  accepterReponse, basculerFavori, lireQuestion, listerReponses, modifierReponse, publierReponse,
+  supprimerQuestion, supprimerReponse, urlMedia, voterQuestion, voterReponse,
 } from "../api";
-import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
+import { Avatar, Avis, Cloche, Difficulte, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
 import TexteFormate, { OutilCode } from "../TexteFormate";
 
 const GradCap = () => (
@@ -241,13 +241,15 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
               {question.captures && question.captures.length > 0 && (
                 <div className="detail__captures" style={{ display: "flex", flexWrap: "wrap", gap: "12px", margin: "16px 0" }}>
                   {question.captures.map((cap) => {
-                    const src = cap.image.startsWith("http")
-                      ? cap.image
-                      : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://127.0.0.1:8000"}${cap.image}`;
+                    const src = urlMedia(cap.image);
+                    const miniature = cap.miniature ? urlMedia(cap.miniature) : src;
                     return (
                       <a key={cap.id} href={src} target="_blank" rel="noopener noreferrer">
                         <img
-                          src={src}
+                          src={miniature}
+                          srcSet={cap.miniature ? `${miniature} 400w, ${src} 1600w` : undefined}
+                          sizes="320px"
+                          loading="lazy"
                           alt="Capture d'écran"
                           style={{ maxWidth: "320px", maxHeight: "200px", borderRadius: "8px", border: "1px solid #dde6f3", objectFit: "cover" }}
                         />
@@ -259,11 +261,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
 
               <div className="question__tags">
                 <span className="tag">{question.categorie.nom}</span>
-                {question.difficulte && (
-                  <span className="tag tag--difficulte" style={{ background: "#eef2ff", color: "#4338ca", fontWeight: 600 }}>
-                    {question.difficulte === "debutant" ? "Débutant" : question.difficulte === "intermediaire" ? "Intermédiaire" : "Avancé"}
-                  </span>
-                )}
+                <Difficulte niveau={question.difficulte} />
                 {question.tags.map((t) => <span key={t} className="tag">{t}</span>)}
               </div>
 

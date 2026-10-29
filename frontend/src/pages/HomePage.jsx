@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import "./HomePage.css";
-import { basculerFavori, listerCategories, listerQuestions, lireClassement, lireStatistiques } from "../api";
-import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
+import {
+  basculerFavori, lireClassement, lireStatistiques, listerCategories, listerQuestions, urlMedia,
+} from "../api";
+import {
+  Avatar, Avis, Cloche, Difficulte, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis,
+} from "../commun";
 import { sansMiseEnForme } from "../TexteFormate";
 
 const Icon = ({ children, size = 20, ...p }) => (
@@ -107,8 +111,11 @@ function CarteQuestion({ q, onOuvrir, onFavori }) {
   return (
     <article className="card qcarte">
       <div className="qcarte__haut">
-        <span className="qcarte__categorie" style={{ "--couleur-categorie": q.categorieCouleur }}>
-          <IconeCategorie nom={q.categorie} />{q.categorie}
+        <span className="qcarte__etiquettes">
+          <span className="qcarte__categorie" style={{ "--couleur-categorie": q.categorieCouleur }}>
+            <IconeCategorie nom={q.categorie} />{q.categorie}
+          </span>
+          <Difficulte niveau={q.difficulte} />
         </span>
         <button type="button" className={`etoile${q.favori ? " is-active" : ""}`} onClick={onFavori}
           aria-pressed={q.favori} title={q.favori ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -117,10 +124,36 @@ function CarteQuestion({ q, onOuvrir, onFavori }) {
         </button>
       </div>
 
-      <h2 className="qcarte__titre">
-        <button type="button" onClick={onOuvrir}>{q.title}</button>
-      </h2>
-      <p className="qcarte__extrait">{q.excerpt}</p>
+      <div className={`qcarte__corps${q.apercu ? " avec-apercu" : ""}`}>
+        <div className="qcarte__texte">
+          <h2 className="qcarte__titre">
+            <button type="button" onClick={onOuvrir}>{q.title}</button>
+          </h2>
+          <p className="qcarte__extrait">{q.excerpt}</p>
+        </div>
+        {q.apercu && (
+          <button type="button" className="qcarte__apercu" onClick={onOuvrir} aria-label={`Ouvrir « ${q.title} »`}>
+            <img src={q.apercu} alt="" loading="lazy" />
+            {q.captures > 1 && <span>+{q.captures - 1}</span>}
+          </button>
+        )}
+      </div>
+
+      {(q.langage || q.captures > 0) && (
+        <div className="qcarte__joints">
+          {q.langage && (
+            <span className="qcarte__joint" title="Contient un extrait de code">
+              <Icon size={14}><path d="M8 8l-4 4 4 4M16 8l4 4-4 4" /></Icon>{q.langage}
+            </span>
+          )}
+          {q.captures > 0 && (
+            <span className="qcarte__joint" title="Contient des captures d’écran">
+              <Icon size={14}><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="M21 16l-5-5-8 8" /></Icon>
+              {pluriel(q.captures, "capture")}
+            </span>
+          )}
+        </div>
+      )}
 
       {q.tags.length > 0 && (
         <div className="qcarte__tags">{q.tags.map((t) => <span key={t}>#{t}</span>)}</div>
@@ -176,6 +209,11 @@ const CarteCommunaute = () => (
 const extrait = (texte, max = 180) =>
   texte.length > max ? `${texte.slice(0, max).trimEnd()}…` : texte;
 
+const NOMS_LANGAGES = {
+  javascript: "JavaScript", python: "Python", java: "Java", c: "C", "c++": "C++", "c#": "C#",
+  php: "PHP", typescript: "TypeScript", sql: "SQL", html: "HTML", css: "CSS", bash: "Bash", json: "JSON",
+};
+
 const versCarte = (q) => ({
   id: q.id,
   votes: q.votes,
@@ -194,6 +232,11 @@ const versCarte = (q) => ({
   when: ilYA(q.date_creation),
   views: q.vues,
   favori: q.favori,
+  difficulte: q.difficulte,
+  langage: q.code_extrait ? NOMS_LANGAGES[q.langage] ?? (q.langage || "Code") : "",
+  code: q.code_extrait,
+  captures: q.captures?.length ?? 0,
+  apercu: q.captures?.[0]?.miniature ? urlMedia(q.captures[0].miniature) : null,
 });
 
 const MENU = ["Accueil", "Questions", "Catégories", "Mes questions", "Favoris", "Classement"];
@@ -274,7 +317,8 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
     const s = query.trim().toLowerCase();
     if (s) {
       items = items.filter((q) =>
-        [q.title, q.description, q.author, q.categorie, ...q.tags].some((texte) => texte.toLowerCase().includes(s))
+        [q.title, q.description, q.author, q.categorie, q.langage, q.code, ...q.tags]
+          .some((texte) => texte.toLowerCase().includes(s))
       );
     }
     return items;

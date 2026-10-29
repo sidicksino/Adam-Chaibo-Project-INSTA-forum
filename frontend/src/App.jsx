@@ -9,7 +9,8 @@ import QuestionPage from "./pages/QuestionPage";
 import MotDePassePage from "./pages/MotDePassePage";
 import ProfilPage from "./pages/ProfilPage";
 import {
-  connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, televerserCaptures, utilisateurConnecte,
+  connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, supprimerCapture, televerserCaptures,
+  utilisateurConnecte,
 } from "./api";
 
 localStorage.removeItem("insta_users");
@@ -208,8 +209,9 @@ export default function App() {
         key={route.id}
         questionId={route.id}
         user={currentUser}
-        onSubmit={async (data, files) => {
+        onSubmit={async (data, files, retirees = []) => {
           await modifierQuestion(route.id, data);
+          await Promise.all(retirees.map((id) => supprimerCapture(id)));
           if (files && files.length > 0) {
             await televerserCaptures(route.id, files).catch(() => {});
           }

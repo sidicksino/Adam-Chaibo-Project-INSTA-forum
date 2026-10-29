@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from .models import (
     Categorie, CaptureQuestion, Favori, Notification, Question, Reponse, Tag, VoteQuestion, VoteReponse, VueQuestion,
 )
+from .images import CAPTURES_MAX, ImageInvalide, preparer_capture
 from .serializers import (
     AuteurSerializer, CaptureSerializer, CategorieSerializer, NotificationSerializer, QuestionSerializer,
     ReponseSerializer, VoteSerializer,
@@ -153,13 +154,33 @@ class QuestionViewSet(
         fichiers = request.FILES.getlist("images")
         if not fichiers:
             return Response({"detail": "Aucun fichier envoyé."}, status=status.HTTP_400_BAD_REQUEST)
-        nouvelles = []
-        for f in fichiers:
-            if not f.content_type.startswith("image/"):
-                continue
-            capture = CaptureQuestion.objects.create(question=question, image=f)
-            nouvelles.append(capture)
-        return Response(CaptureSerializer(nouvelles, many=True).data, status=status.HTTP_201_CREATED)
+        if question.captures.count() + len(fichiers) > CAPTURES_MAX:
+            return Response(
+                {"detail": f"Pas plus de {CAPTURES_MAX} captures d’écran par question."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            preparees = [preparer_capture(f) for f in fichiers]
+        except ImageInvalide as erreur:
+            return Response({"detail": str(erreur)}, status=status.HTTP_400_BAD_REQUEST)
+
+        nouvelles = [
+            CaptureQuestion.objects.create(question=question, image=image, miniature=miniature)
+            for image, miniature in preparees
+        ]
+        return Response(
+            CaptureSerializer(nouvelles, many=True, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def supprimer_capture(request, pk):
+    capture = get_object_or_404(CaptureQuestion.objects.select_related("question"), pk=pk)
+    verifier_auteur(request, capture.question, "supprimer cette capture")
+    capture.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST"])

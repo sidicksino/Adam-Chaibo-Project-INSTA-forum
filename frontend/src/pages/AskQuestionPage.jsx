@@ -1,7 +1,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./AskQuestionPage.css";
-import { listerCategories, lireQuestion, listerQuestions } from "../api";
+import { listerCategories, lireQuestion, listerQuestions, urlMedia } from "../api";
+
+const CAPTURES_MAX = 5;
 import { insererBlocCode } from "../TexteFormate";
 
 /* ───── constantes ───── */
@@ -260,7 +262,7 @@ function ChampCapture({ captures, setCaptures }) {
     const acceptes = Array.from(fichiers).filter(
       (f) => f.type.startsWith("image/") && f.size <= 5 * 1024 * 1024
     );
-    const nouvelles = acceptes.map((f) => ({
+    const nouvelles = acceptes.slice(0, Math.max(0, CAPTURES_MAX - captures.length)).map((f) => ({
       fichier: f,
       nom: f.name,
       apercu: URL.createObjectURL(f),
@@ -298,7 +300,7 @@ function ChampCapture({ captures, setCaptures }) {
           <path d="M21 15l-5-5L5 21" />
         </svg>
         <p>Glissez une image ici ou <u>parcourez vos fichiers</u></p>
-        <small>PNG ou JPG, 5 Mo maximum</small>
+        <small>PNG ou JPG, 5 Mo maximum, {CAPTURES_MAX} images au plus</small>
         <input
           ref={inputRef}
           type="file"
@@ -414,6 +416,7 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [pret, setPret] = useState(!modification);
+  const capturesInitiales = useRef([]);
 
   const zoneDescription = useRef(null);
 
@@ -445,12 +448,12 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
         setCodeExtrait(q.code_extrait || "");
         setLangage(q.langage || "javascript");
         if (Array.isArray(q.captures)) {
-          const apiBase = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://127.0.0.1:8000";
+          capturesInitiales.current = q.captures.map((c) => c.id);
           setCaptures(
             q.captures.map((c) => ({
               id: c.id,
               nom: "Capture",
-              apercu: c.image.startsWith("http") ? c.image : `${apiBase}${c.image}`,
+              apercu: urlMedia(c.miniature || c.image),
             }))
           );
         }
@@ -489,6 +492,8 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
     try {
       setEnvoi(true);
       const nouvellesImages = captures.filter((c) => c.fichier).map((c) => c.fichier);
+      const gardees = new Set(captures.filter((c) => c.id).map((c) => c.id));
+      const retirees = capturesInitiales.current.filter((id) => !gardees.has(id));
       await onSubmit(
         {
           titre: titre.trim(),
@@ -499,7 +504,8 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
           code_extrait: codeExtrait.trim(),
           langage: codeExtrait.trim() ? langage : "",
         },
-        nouvellesImages
+        nouvellesImages,
+        retirees
       );
     } catch (err) {
       setErreur(err?.message || "Impossible d'enregistrer la question. Réessayez.");

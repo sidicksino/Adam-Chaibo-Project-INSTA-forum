@@ -20,7 +20,7 @@ class AuteurSerializer(serializers.Serializer):
 class CaptureSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaptureQuestion
-        fields = ["id", "image", "date_ajout"]
+        fields = ["id", "image", "miniature", "date_ajout"]
         read_only_fields = ["date_ajout"]
 
 
