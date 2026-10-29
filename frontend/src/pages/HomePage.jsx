@@ -339,7 +339,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
 
   return (
     <div className="home">
-      <header className="home__nav">
+      <header className="home__nav home__nav--recherche">
         <a className="home__logo" href="#/">
           <GradCap />
           <span>INSTA-<b>FORUM</b></span>
@@ -561,6 +561,10 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
           </section>
         </aside>
       </div>
+      <button type="button" className="bouton-flottant" onClick={onAskQuestion}
+        aria-label="Poser une question" title="Poser une question">
+        {I.plus}
+      </button>
       <Avis texte={avis} />
     </div>
   );

@@ -177,6 +177,26 @@
   color: var(--h-gray);
 }
 
+.bouton-flottant {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--h-blue);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(23, 102, 240, 0.4);
+}
+.bouton-flottant svg { width: 26px; height: 26px; stroke-width: 2.5; }
+.bouton-flottant:active { transform: scale(0.95); }
+.bouton-flottant:focus-visible { outline: 3px solid rgba(23, 102, 240, 0.4); outline-offset: 3px; }
+
 .compte { position: relative; }
 .compte__menu {
   position: absolute;
@@ -637,14 +657,26 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
   .home__hero-image { right: 24px; height: 130px; }
 }
 @media (max-width: 760px) {
-  .home__nav { padding: 0 16px; gap: 12px; height: 68px; }
-  .home__logo span, .home__ask span { display: none; }
-  .home__actions { gap: 10px; }
-  .home__ask { padding: 0 12px; }
+  .home__nav { padding: 0 16px; gap: 12px; height: 64px; }
+  .home__logo { gap: 8px; font-size: 1.25rem; }
+  .home__logo svg { width: 36px; height: 23px; }
+  .home__actions { gap: 12px; }
   .home__icon-btn { width: 42px; height: 42px; }
 
-  .notifs__menu { position: fixed; top: 76px; left: 16px; right: 16px; width: auto; }
-  .home__body { grid-template-columns: 1fr; padding: 16px 16px 40px; gap: 18px; }
+  .home__nav--recherche {
+    position: static;
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 16px 14px;
+    row-gap: 12px;
+  }
+  .home__nav--recherche .home__search { order: 3; flex-basis: 100%; max-width: none; height: 46px; }
+  .home__nav--recherche .home__ask { display: none; }
+
+  .bouton-flottant { display: flex; }
+
+  .notifs__menu { position: fixed; top: 72px; left: 16px; right: 16px; width: auto; }
+  .home__body { grid-template-columns: 1fr; padding: 16px 16px 96px; gap: 18px; }
   .home__menu { flex-direction: row; overflow-x: auto; position: static; min-height: 0; padding: 8px; }
   .home__menu-item { height: 44px; gap: 10px; }
   .home__menu-item span { white-space: nowrap; }
