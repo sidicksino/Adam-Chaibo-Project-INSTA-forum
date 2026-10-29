@@ -4,6 +4,7 @@ import "./QuestionPage.css";
 import "./SignupPage.css";
 import "./ProfilPage.css";
 import { changerMotDePasse, lireMembre, modifierMonProfil } from "../api";
+import { sansMiseEnForme } from "../TexteFormate";
 import { Avatar, Cloche, MenuCompte, Solidite, couleurPour, ilYA, pluriel } from "../commun";
 
 const GradCap = () => (
@@ -257,7 +258,7 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
                       <span className="profil__contexte">
                         Réponse à <a href={`#/questions/${r.question.id}`}>{r.question.titre}</a>
                       </span>
-                      <p className="profil__extrait">{r.extrait.replace(/```[\w+#.-]*\n?/g, "").replace(/`/g, "")}</p>
+                      <p className="profil__extrait">{sansMiseEnForme(r.extrait)}</p>
                       <span className="profil__meta">
                         {ilYA(r.date_creation)} · {pluriel(r.votes, "vote")}
                         {r.acceptee && <span className="profil__resolue">✓ Réponse acceptée</span>}

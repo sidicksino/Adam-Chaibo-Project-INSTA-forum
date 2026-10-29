@@ -8,6 +8,33 @@
   overflow-wrap: anywhere;
 }
 .texte-formate p:empty { display: none; }
+.texte-formate strong { font-weight: 700; color: #0f2a5c; }
+.texte-formate a { color: #1766f0; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.texte-formate a:hover { color: #0f52cc; }
+
+.tf-image { display: block; width: fit-content; max-width: 100%; margin: 4px 0; }
+.tf-image img { display: block; max-width: 100%; max-height: 420px; border: 1px solid #dde6f3; border-radius: 10px; }
+
+.tf-titre { margin: 4px 0 0; color: #0f2a5c; line-height: 1.35; }
+h3.tf-titre { font-size: 1.125rem; }
+h4.tf-titre { font-size: 1rem; }
+h5.tf-titre { font-size: 0.9375rem; }
+
+.tf-liste { display: flex; flex-direction: column; gap: 6px; margin: 0; padding-left: 1.4em; font-size: 0.9375rem; line-height: 1.6; }
+.tf-liste li { padding-left: 2px; }
+.tf-liste li::marker { color: #1766f0; font-weight: 700; }
+
+.tf-citation {
+  margin: 0;
+  padding: 10px 16px;
+  border-left: 4px solid #c9dcfa;
+  border-radius: 0;
+  background: #f4f8ff;
+  color: #22355a;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
 
 .code-en-ligne {
   padding: 2px 6px;
@@ -63,6 +90,7 @@
   align-items: center;
   gap: 10px;
 }
+.outil-code__boutons { display: flex; flex-wrap: wrap; gap: 6px; }
 .outil-code button {
   display: inline-flex;
   align-items: center;

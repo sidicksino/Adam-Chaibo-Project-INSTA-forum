@@ -132,21 +132,24 @@ function CarteQuestion({ q, onOuvrir, onFavori }) {
           <p className="qcarte__extrait">{q.excerpt}</p>
         </div>
         {q.apercu && (
-          <button type="button" className="qcarte__apercu" onClick={onOuvrir} aria-label={`Ouvrir « ${q.title} »`}>
-            <img src={q.apercu} alt="" loading="lazy" />
-            {q.captures > 1 && <span>+{q.captures - 1}</span>}
+          <button type="button" className={`qcarte__apercu${q.captures > 1 ? " is-pile" : ""}`} onClick={onOuvrir}
+            aria-label={`Ouvrir « ${q.title} » (${pluriel(q.captures, "capture")})`}>
+            <span className="qcarte__apercu-cadre">
+              <img src={q.apercu} alt="" loading="lazy" />
+              {q.captures > 1 && <span className="qcarte__apercu-plus">+{q.captures - 1}</span>}
+            </span>
           </button>
         )}
       </div>
 
-      {(q.langage || q.captures > 0) && (
+      {(q.langage || (q.captures > 0 && !q.apercu)) && (
         <div className="qcarte__joints">
           {q.langage && (
             <span className="qcarte__joint" title="Contient un extrait de code">
               <Icon size={14}><path d="M8 8l-4 4 4 4M16 8l4 4-4 4" /></Icon>{q.langage}
             </span>
           )}
-          {q.captures > 0 && (
+          {q.captures > 0 && !q.apercu && (
             <span className="qcarte__joint" title="Contient des captures d’écran">
               <Icon size={14}><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="M21 16l-5-5-8 8" /></Icon>
               {pluriel(q.captures, "capture")}

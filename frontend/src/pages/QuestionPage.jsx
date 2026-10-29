@@ -3,10 +3,11 @@ import "./HomePage.css";
 import "./QuestionPage.css";
 import {
   accepterReponse, basculerFavori, lireQuestion, listerReponses, modifierReponse, publierReponse,
-  supprimerQuestion, supprimerReponse, urlMedia, voterQuestion, voterReponse,
+  supprimerQuestion, supprimerReponse, voterQuestion, voterReponse,
 } from "../api";
 import { Avatar, Avis, Cloche, Difficulte, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
 import TexteFormate, { OutilCode } from "../TexteFormate";
+import Galerie from "../Galerie";
 
 const GradCap = () => (
   <svg width="44" height="28" viewBox="0 0 160 100" aria-hidden="true">
@@ -238,26 +239,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                 </div>
               )}
 
-              {question.captures && question.captures.length > 0 && (
-                <div className="detail__captures" style={{ display: "flex", flexWrap: "wrap", gap: "12px", margin: "16px 0" }}>
-                  {question.captures.map((cap) => {
-                    const src = urlMedia(cap.image);
-                    const miniature = cap.miniature ? urlMedia(cap.miniature) : src;
-                    return (
-                      <a key={cap.id} href={src} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={miniature}
-                          srcSet={cap.miniature ? `${miniature} 400w, ${src} 1600w` : undefined}
-                          sizes="320px"
-                          loading="lazy"
-                          alt="Capture d'écran"
-                          style={{ maxWidth: "320px", maxHeight: "200px", borderRadius: "8px", border: "1px solid #dde6f3", objectFit: "cover" }}
-                        />
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
+              <Galerie images={question.captures} />
 
               <div className="question__tags">
                 <span className="tag">{question.categorie.nom}</span>

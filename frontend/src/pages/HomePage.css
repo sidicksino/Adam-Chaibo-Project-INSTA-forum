@@ -382,6 +382,15 @@
   width: 120px;
   height: 90px;
   padding: 0;
+  border: 0;
+  background: none;
+}
+.qcarte__apercu-cadre {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--h-line);
   border-radius: 12px;
@@ -389,15 +398,25 @@
 }
 .qcarte__apercu img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.2s; }
 .qcarte__apercu:hover img { transform: scale(1.04); }
-.qcarte__apercu span {
+.qcarte__apercu.is-pile::before,
+.qcarte__apercu.is-pile::after {
+  content: "";
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  padding: 2px 7px;
+  inset: 0;
+  border: 1px solid #d5e0f0;
+  border-radius: 12px;
+  background: #e9eff8;
+}
+.qcarte__apercu.is-pile::before { z-index: 1; transform: translate(6px, -6px) rotate(3deg); }
+.qcarte__apercu.is-pile::after { z-index: 0; transform: translate(11px, -11px) rotate(6deg); background: #dfe7f4; }
+.qcarte__apercu-plus {
+  position: absolute;
+  inset: auto 6px 6px auto;
+  padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(15, 42, 92, 0.75);
+  background: rgba(15, 42, 92, 0.82);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 

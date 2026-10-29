@@ -4,7 +4,6 @@ import "./AskQuestionPage.css";
 import { listerCategories, lireQuestion, listerQuestions, urlMedia } from "../api";
 
 const CAPTURES_MAX = 5;
-import { insererBlocCode } from "../TexteFormate";
 
 /* ───── constantes ───── */
 
