@@ -119,9 +119,26 @@ export const basculerFavori = (id) =>
 
 export const lireClassement = () => requete("/classement/");
 
+// { non_lues, notifications: [...] }
+export const lireNotifications = () => requete("/notifications/");
+
+// Sans identifiant : marque toutes les notifications comme lues
+export const marquerNotificationsLues = (id) =>
+  requete("/notifications/lire/", { methode: "POST", corps: id ? { id } : {} });
+
 export const listerCategories = () => requete("/categories/");
 
 export const lireStatistiques = () => requete("/statistiques/");
+
+/* ---------- Mot de passe oublié ---------- */
+export const demanderReinitialisation = (email) =>
+  requete("/comptes/mot-de-passe-oublie/", { methode: "POST", corps: { email } });
+
+export const verifierLien = (uid, token) =>
+  requete("/comptes/reinitialiser/verifier/", { methode: "POST", corps: { uid, token } });
+
+export const reinitialiserMotDePasse = (uid, token, password) =>
+  requete("/comptes/reinitialiser/", { methode: "POST", corps: { uid, token, password } });
 
 // Retrouve l'utilisateur connecté au rechargement de la page.
 export async function utilisateurConnecte() {

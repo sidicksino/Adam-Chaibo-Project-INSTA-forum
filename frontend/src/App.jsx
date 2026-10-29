@@ -6,6 +6,7 @@ import SignupPage from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import AskQuestionPage from "./pages/AskQuestionPage";
 import QuestionPage from "./pages/QuestionPage";
+import MotDePassePage from "./pages/MotDePassePage";
 import {
   connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, utilisateurConnecte,
 } from "./api";
@@ -43,6 +44,11 @@ function analyser(adresse) {
   if (chemin === "/connexion") return { page: "connexion" };
   if (chemin === "/inscription") return { page: "inscription" };
   if (chemin === "/poser") return { page: "poser" };
+  if (chemin === "/mot-de-passe-oublie") return { page: "oubli" };
+
+  // Lien reçu par email : #/reinitialiser/<uid>/<jeton>
+  const lien = chemin.match(/^\/reinitialiser\/([\w-]+)\/([\w-]+)$/);
+  if (lien) return { page: "reinitialiser", uid: lien[1], token: lien[2] };
 
   const detail = chemin.match(/^\/questions\/(\d+)$/);
   if (detail) return { page: "question", id: Number(detail[1]) };
@@ -63,6 +69,8 @@ function analyser(adresse) {
 const TITRES = {
   connexion: "Connexion",
   inscription: "Créer un compte",
+  oubli: "Mot de passe oublié",
+  reinitialiser: "Nouveau mot de passe",
   poser: "Poser une question",
   modifier: "Modifier la question",
   question: "Question",
@@ -100,7 +108,9 @@ export default function App() {
   if (route.page === "accueil") derniereVue.current = adresse;
 
   // Titre de l'onglet du navigateur
-  const pageAffichee = currentUser || ["inscription"].includes(route.page) ? route.page : "connexion";
+  // Pages accessibles sans être connecté
+  const PAGES_PUBLIQUES = ["inscription", "oubli", "reinitialiser"];
+  const pageAffichee = currentUser || PAGES_PUBLIQUES.includes(route.page) ? route.page : "connexion";
   useEffect(() => {
     const titre = pageAffichee === "accueil" ? (route.menu === "Accueil" ? "" : route.menu) : TITRES[pageAffichee];
     document.title = titre ? `${titre} — INSTA-FORUM` : "INSTA-FORUM";
@@ -143,6 +153,28 @@ export default function App() {
 
   if (chargement) return null;
 
+  // ===== Mot de passe oublié (connecté ou non) =====
+  if (route.page === "oubli" || route.page === "reinitialiser") {
+    return (
+      <MotDePassePage
+        key={route.page}
+        uid={route.uid}
+        token={route.token}
+        onRetour={() => aller(currentUser ? "/" : "/connexion")}
+        onNouvelleDemande={() => aller("/mot-de-passe-oublie")}
+        onTermine={async (message) => {
+          // Le mot de passe a changé : toutes les sessions sont fermées, on se reconnecte.
+          if (currentUser) {
+            await deconnecter().catch(() => {});
+            setCurrentUser(null);
+          }
+          setMessageConnexion(message);
+          aller("/connexion");
+        }}
+      />
+    );
+  }
+
   // ===== Pages accessibles sans être connecté =====
   if (!currentUser) {
     if (route.page === "inscription") {
@@ -153,9 +185,7 @@ export default function App() {
         message={messageConnexion}
         onLogin={handleLogin}
         onSignup={() => aller("/inscription")}
-        onForgotPassword={() =>
-          alert("La réinitialisation du mot de passe n’est pas encore disponible. Contactez un administrateur.")
-        }
+        onForgotPassword={() => aller("/mot-de-passe-oublie")}
       />
     );
   }

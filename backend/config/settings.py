@@ -10,10 +10,21 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Réglages privés (mot de passe Gmail…) lus dans backend/.env, un fichier jamais envoyé sur GitHub.
+# Modèle : backend/.env.exemple. Une variable déjà définie dans le terminal reste prioritaire.
+_fichier_env = BASE_DIR / ".env"
+if _fichier_env.exists():
+    for _ligne in _fichier_env.read_text(encoding="utf-8").splitlines():
+        _ligne = _ligne.strip()
+        if _ligne and not _ligne.startswith("#") and "=" in _ligne:
+            _cle, _valeur = _ligne.split("=", 1)
+            os.environ.setdefault(_cle.strip(), _valeur.strip().strip('"').strip("'"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -150,8 +161,36 @@ REST_FRAMEWORK = {
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# Avec EMAIL_UTILISATEUR et EMAIL_MOT_DE_PASSE (dans backend/.env), les emails partent par Gmail.
+# Sans eux, ils sont simplement affichés dans le terminal de « runserver » (pratique pour tester).
+EMAIL_UTILISATEUR = os.environ.get("EMAIL_UTILISATEUR", "")
+EMAIL_MOT_DE_PASSE = os.environ.get("EMAIL_MOT_DE_PASSE", "")
+
+if EMAIL_UTILISATEUR and EMAIL_MOT_DE_PASSE:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+            'OPTIONS': {
+                'host': os.environ.get("EMAIL_SERVEUR", "smtp.gmail.com"),
+                'port': int(os.environ.get("EMAIL_PORT", "587")),
+                'username': EMAIL_UTILISATEUR,
+                'password': EMAIL_MOT_DE_PASSE,
+                'use_tls': True,
+                'timeout': 15,
+            },
+        },
+    }
+else:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        },
+    }
+
+DEFAULT_FROM_EMAIL = f"INSTA-FORUM <{EMAIL_UTILISATEUR or 'ne-pas-repondre@insta-forum.local'}>"
+
+# Adresse du site React : sert à construire le lien envoyé par email
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+
+# Durée de validité du lien « mot de passe oublié » (1 heure)
+PASSWORD_RESET_TIMEOUT = 60 * 60

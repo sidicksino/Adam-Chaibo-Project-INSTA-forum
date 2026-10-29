@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Categorie, Question, Reponse, Tag
+from .models import Categorie, Notification, Question, Reponse, Tag
 
 
 class CategorieSerializer(serializers.ModelSerializer):
@@ -143,3 +143,16 @@ class VoteSerializer(serializers.Serializer):
         choices=[1, -1],
         error_messages={"invalid_choice": "Le vote doit valoir 1 (pour) ou -1 (contre)."},
     )
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    acteur = AuteurSerializer(read_only=True)
+    # Juste ce qu'il faut pour afficher le titre et ouvrir la question
+    question = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Notification
+        fields = ["id", "type", "acteur", "question", "lue", "date"]
+
+    def get_question(self, notification):
+        return {"id": notification.question_id, "titre": notification.question.titre}

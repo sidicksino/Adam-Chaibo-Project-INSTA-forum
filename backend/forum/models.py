@@ -156,3 +156,34 @@ class VoteReponse(Vote):
         constraints = [
             models.UniqueConstraint(fields=["utilisateur", "reponse"], name="un_vote_par_reponse"),
         ]
+
+
+class Notification(models.Model):
+    """Prévient un membre de ce qui se passe autour de ses questions et réponses (cloche)."""
+
+    class Type(models.TextChoices):
+        REPONSE = "reponse", "Nouvelle réponse à votre question"
+        ACCEPTEE = "acceptee", "Votre réponse a été acceptée"
+
+    destinataire = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications", verbose_name="destinataire"
+    )
+    # La personne qui a fait l'action (qui a répondu, qui a accepté)
+    acteur = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+", verbose_name="acteur"
+    )
+    type = models.CharField("type", max_length=20, choices=Type.choices)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="+", verbose_name="question")
+    # Supprimer la réponse supprime aussi la notification qui en parle
+    reponse = models.ForeignKey(Reponse, on_delete=models.CASCADE, related_name="+", verbose_name="réponse")
+    lue = models.BooleanField("lue", default=False)
+    date = models.DateTimeField("date", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "notification"
+        verbose_name_plural = "notifications"
+        ordering = ["-date"]
+        indexes = [models.Index(fields=["destinataire", "lue"])]
+
+    def __str__(self):
+        return f"{self.get_type_display()} → {self.destinataire}"

@@ -10,6 +10,9 @@ On y pose ses questions, on répond à celles des autres, on vote pour les meill
 - **Questions** : publication avec catégorie et tags, recherche, onglets *Récentes*, *Populaires*, *Sans réponse*, *Résolues*.
 - **Réponses** : page de détail d’une question, réponses, compteur de vues (une vue par membre).
 - **Modifier / supprimer** : chacun peut corriger ou supprimer ses propres questions et réponses (mention « modifiée »).
+- **Mot de passe oublié** : lien envoyé par email (valable 1 heure, utilisable une seule fois) pour choisir un nouveau mot de passe.
+- **Notifications** (🔔) : prévient quand quelqu’un répond à votre question ou accepte votre réponse ; pastille rouge, vérification toutes les 30 s, « Tout marquer comme lu ».
+- **Code mis en forme** : le code entouré de ``` s’affiche en couleur (Python, Java, C, C++, C#, JavaScript, TypeScript, PHP, SQL, HTML, CSS, JSON, terminal), avec un bouton « Copier » ; `code` dans une phrase est aussi mis en valeur. Le bouton « </> Code » des formulaires insère le bloc.
 - **Réponse acceptée** : l’auteur de la question choisit la bonne réponse, la question passe en *Résolue*.
 - **Votes** : pour (▲) ou contre (▼) une question ou une réponse ; impossible de voter pour soi-même.
 - **Menu** : *Accueil*, *Questions* (filtre par catégorie), *Catégories*, *Mes questions*, *Favoris* (☆), *Classement*.
@@ -20,7 +23,7 @@ On y pose ses questions, on répond à celles des autres, on vote pour les meill
 
 | Partie | Outils |
 |---|---|
-| Frontend | React 18, Vite 5 |
+| Frontend | React 18, Vite 5, highlight.js (coloration du code) |
 | Backend | Django 6.1, Django REST Framework, django-cors-headers |
 | Base de données | SQLite (fichier `backend/db.sqlite3`, créé automatiquement) |
 | Authentification | Jeton (`Authorization: Token <jeton>`) |
@@ -89,6 +92,14 @@ python manage.py migrate
 
 `migrate` crée la base de données et les cinq catégories de départ (Programmation, Réseaux, Bases de données, Systèmes & Linux, Génie logiciel).
 
+Optionnel, pour remplir le forum avec des **données de démonstration** (10 membres, 14 questions avec du code, réponses, votes, favoris, notifications) :
+
+```bash
+python manage.py peupler
+```
+
+Tous les membres de démonstration ont le mot de passe `Forum-Insta-2026` (par exemple `hawa.brahim`, `abdelkerim.saleh`). Leurs adresses se terminent par `@insta-forum.example`, un domaine réservé aux exemples. Pour les retirer : `python manage.py peupler --supprimer` (les vrais comptes ne sont jamais touchés).
+
 Optionnel, pour accéder à l’administration Django :
 
 ```bash
@@ -132,6 +143,25 @@ Ouvrez ensuite **http://localhost:5173** dans votre navigateur et créez un comp
 
 ## Configuration
 
+### Envoi des emails (mot de passe oublié)
+
+Sans réglage, les emails ne partent pas : ils s’affichent dans le **terminal du backend** (`runserver`), et vous pouvez copier le lien depuis là. Pour les envoyer vraiment avec Gmail :
+
+1. Activez la **validation en deux étapes** sur le compte Google qui enverra les emails.
+2. Créez un **mot de passe d’application** : https://myaccount.google.com/apppasswords (16 lettres). N’utilisez jamais votre mot de passe Gmail normal.
+3. Dans `backend`, copiez `.env.exemple` sous le nom `.env` et remplissez :
+
+   ```
+   EMAIL_UTILISATEUR=votre.adresse@gmail.com
+   EMAIL_MOT_DE_PASSE=abcdefghijklmnop
+   ```
+
+4. Redémarrez `python manage.py runserver`.
+
+Le fichier `.env` est dans `.gitignore` : il n’est **jamais envoyé sur GitHub**. Chaque membre de l’équipe crée le sien.
+
+### Adresse de l’API
+
 Le frontend appelle par défaut l’API sur `http://127.0.0.1:8000/api`. Pour changer cette adresse, créez un fichier `frontend/.env` :
 
 ```
@@ -152,6 +182,9 @@ Toutes les adresses commencent par `/api/`. 🔒 = connexion obligatoire (en-tê
 | POST | `/comptes/connexion/` | se connecter (`identifier` = nom d’utilisateur ou email) → renvoie le jeton |
 | POST | `/comptes/deconnexion/` 🔒 | supprimer le jeton |
 | GET | `/comptes/moi/` 🔒 | utilisateur connecté |
+| POST | `/comptes/mot-de-passe-oublie/` | envoie le lien par email (`{"email": …}`) |
+| POST | `/comptes/reinitialiser/verifier/` | le lien (`uid`, `token`) est-il encore valable ? |
+| POST | `/comptes/reinitialiser/` | nouveau mot de passe (`uid`, `token`, `password`) |
 
 ### Forum
 
@@ -170,11 +203,24 @@ Toutes les adresses commencent par `/api/`. 🔒 = connexion obligatoire (en-tê
 | DELETE | `/reponses/<id>/` 🔒 | supprimer sa réponse (auteur uniquement) |
 | POST | `/reponses/<id>/voter/` 🔒 | voter pour une réponse |
 | POST | `/reponses/<id>/accepter/` 🔒 | accepter une réponse (auteur de la question uniquement) |
+| GET | `/notifications/` 🔒 | 30 dernières notifications et nombre de non lues |
+| POST | `/notifications/lire/` 🔒 | tout marquer comme lu, ou une seule avec `{"id": 12}` |
 | GET | `/categories/` | catégories et nombre de questions |
 | GET | `/statistiques/` | chiffres de la page d’accueil |
 | GET | `/classement/` | classement des membres |
 
 Revoter la même valeur, ou cliquer de nouveau sur « favori » ou « accepter », **annule** l’action.
+
+## Tests automatisés
+
+37 tests vérifient les règles du forum : inscription et connexion, mot de passe oublié, une vue par membre (l’auteur n’est pas compté), pas de vote pour soi-même, une seule réponse acceptée, seul l’auteur modifie ou supprime, favoris, notifications, classement, tri des questions et données de démonstration.
+
+```bash
+cd backend
+python manage.py test
+```
+
+Django crée une base de données temporaire pour les tests : **vos vraies données ne sont jamais touchées**. Lancez-les avant chaque `git push` : si un test échoue, son nom indique la règle qui ne fonctionne plus.
 
 ## Barème du classement
 
@@ -188,6 +234,9 @@ Revoter la même valeur, ou cliquer de nouveau sur « favori » ou « accepter �
 Le barème se modifie dans `backend/forum/views.py` (constantes `POINTS_…`).
 
 ## Problèmes fréquents
+
+**L’email « mot de passe oublié » n’arrive pas**
+Sans fichier `backend/.env`, c’est normal : l’email est affiché dans le terminal du backend. Avec Gmail : vérifiez le mot de passe d’application (pas le mot de passe normal), regardez dans les spams, et lisez l’erreur dans le terminal du backend.
 
 **`vite: Permission denied` ou `'vite' n’est pas reconnu`**
 Le dossier `node_modules` vient d’un autre ordinateur. Supprimez-le puis réinstallez :
@@ -214,11 +263,11 @@ De nouvelles migrations sont arrivées : lancez `python manage.py migrate`.
 
 - [x] Modifier et supprimer ses propres questions et réponses
 - [x] Adresses de pages (`#/questions/12`) : l’actualisation et le bouton Retour du navigateur fonctionnent
-- [ ] Mise en forme du code dans les questions et réponses (blocs entre trois accents graves)
-- [ ] « Mot de passe oublié » (réinitialisation par email)
-- [ ] Notifications (cloche)
+- [x] Mise en forme du code dans les questions et réponses (blocs entre trois accents graves)
+- [x] « Mot de passe oublié » (réinitialisation par email)
+- [x] Notifications (cloche)
 - [ ] Page de profil
-- [ ] Tests automatisés
+- [x] Tests automatisés (backend)
 - [ ] Réglages de production avant la mise en ligne : `SECRET_KEY` hors du code, `DEBUG = False`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`
 - [ ] Pagination des questions
 

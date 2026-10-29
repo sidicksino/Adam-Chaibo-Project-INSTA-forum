@@ -7,4 +7,7 @@ urlpatterns = [
     path("connexion/", views.connexion, name="connexion"),
     path("deconnexion/", views.deconnexion, name="deconnexion"),
     path("moi/", views.moi, name="moi"),
+    path("mot-de-passe-oublie/", views.mot_de_passe_oublie, name="mot-de-passe-oublie"),
+    path("reinitialiser/", views.reinitialiser, name="reinitialiser"),
+    path("reinitialiser/verifier/", views.verifier_lien, name="verifier-lien"),
 ]

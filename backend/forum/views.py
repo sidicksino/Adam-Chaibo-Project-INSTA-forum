@@ -9,9 +9,12 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from .models import Categorie, Favori, Question, Reponse, Tag, VoteQuestion, VoteReponse, VueQuestion
+from .models import (
+    Categorie, Favori, Notification, Question, Reponse, Tag, VoteQuestion, VoteReponse, VueQuestion,
+)
 from .serializers import (
-    AuteurSerializer, CategorieSerializer, QuestionSerializer, ReponseSerializer, VoteSerializer,
+    AuteurSerializer, CategorieSerializer, NotificationSerializer, QuestionSerializer, ReponseSerializer,
+    VoteSerializer,
 )
 
 
@@ -62,7 +65,7 @@ class CategorieViewSet(viewsets.ReadOnlyModelViewSet):
     """GET /api/categories/ : liste des catégories avec leur nombre de questions."""
 
     serializer_class = CategorieSerializer
-    queryset = Categorie.objects.annotate(nb_questions=Count("questions"))
+    queryset = Categorie.objects.annotate(nb_questions=Count("questions")).order_by("nom")
 
 
 class QuestionViewSet(
@@ -92,6 +95,8 @@ class QuestionViewSet(
         Question.objects.select_related("auteur", "categorie")
         .prefetch_related("tags")
         .annotate(nb_reponses=Count("reponses"))
+        # order_by explicite : avec un annotate (Count), Django ignore le tri par défaut du modèle
+        .order_by("-date_creation")
     )
 
     def get_serializer_context(self):
@@ -129,6 +134,9 @@ class QuestionViewSet(
                 # F() fait l'addition dans la base : deux visites simultanées sont bien comptées.
                 Question.objects.filter(pk=question.pk).update(vues=F("vues") + 1)
                 question.vues += 1
+        # Ouvrir la question marque comme lues les notifications qui en parlent
+        if utilisateur.is_authenticated:
+            Notification.objects.filter(destinataire=utilisateur, question=question, lue=False).update(lue=True)
         contexte = {
             **self.get_serializer_context(),
             "mes_votes": mes_votes(VoteQuestion, "question", request.user, [question.id]),
@@ -146,7 +154,13 @@ class QuestionViewSet(
 
         serializer = ReponseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(question=question, auteur=request.user)
+        reponse = serializer.save(question=question, auteur=request.user)
+        # Prévenir l'auteur de la question (sauf s'il se répond à lui-même)
+        if question.auteur_id != request.user.id:
+            Notification.objects.create(
+                destinataire_id=question.auteur_id, acteur=request.user,
+                type=Notification.Type.REPONSE, question=question, reponse=reponse,
+            )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
@@ -220,7 +234,41 @@ def accepter_reponse(request, pk):
         question.resolue = nouvel_etat
         question.save(update_fields=["resolue"])
 
+        # Une seule « réponse acceptée » à la fois : l'ancienne notification ne veut plus rien dire.
+        Notification.objects.filter(question=question, type=Notification.Type.ACCEPTEE).delete()
+        if nouvel_etat and reponse.auteur_id != request.user.id:
+            Notification.objects.create(
+                destinataire_id=reponse.auteur_id, acteur=request.user,
+                type=Notification.Type.ACCEPTEE, question=question, reponse=reponse,
+            )
+
     return Response(ReponseSerializer(reponse).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def notifications(request):
+    """GET /api/notifications/ : les 30 dernières notifications et le nombre de non lues."""
+    mes_notifications = Notification.objects.filter(destinataire=request.user)
+    recentes = mes_notifications.select_related("acteur", "question")[:30]
+    return Response({
+        "non_lues": mes_notifications.filter(lue=False).count(),
+        "notifications": NotificationSerializer(recentes, many=True).data,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def lire_notifications(request):
+    """
+    POST /api/notifications/lire/ : marque comme lues toutes les notifications,
+    ou seulement celle indiquée avec {"id": 12}.
+    """
+    a_marquer = Notification.objects.filter(destinataire=request.user, lue=False)
+    if request.data.get("id") is not None:
+        a_marquer = a_marquer.filter(pk=request.data["id"])
+    a_marquer.update(lue=True)
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # Barème du classement (affiché aussi sur la page « Classement »)

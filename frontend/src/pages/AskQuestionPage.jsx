@@ -1,7 +1,8 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./AskQuestionPage.css";
 import { listerCategories, lireQuestion } from "../api";
+import { OutilCode } from "../TexteFormate";
 
 // Sert à poser une question, ou à la modifier quand questionId est fourni.
 export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) {
@@ -15,6 +16,8 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
   const [envoi, setEnvoi] = useState(false);
   // En modification, le formulaire reste caché tant que la question n'est pas chargée
   const [pret, setPret] = useState(!modification);
+  // Zone de description, pour que le bouton « </> Code » insère au bon endroit
+  const zoneDescription = useRef(null);
 
   // Les catégories viennent du serveur (modifiables depuis l'administration Django)
   useEffect(() => {
@@ -116,8 +119,10 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
             placeholder="Expliquez votre problème en détail..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            ref={zoneDescription}
             required
           />
+          <OutilCode zone={zoneDescription} valeur={description} setValeur={setDescription} />
 
           <label>Tags</label>
           <input

@@ -1,5 +1,8 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
 
 from .models import Utilisateur
@@ -85,6 +88,46 @@ class ConnexionSerializer(serializers.Serializer):
         )
         if utilisateur is None:
             raise serializers.ValidationError("Identifiants incorrects.")
+
+        donnees["utilisateur"] = utilisateur
+        return donnees
+
+
+class DemandeReinitialisationSerializer(serializers.Serializer):
+    """« Mot de passe oublié » : l'adresse email du compte."""
+
+    email = serializers.EmailField(error_messages={
+        "required": "Indiquez votre adresse email.",
+        "blank": "Indiquez votre adresse email.",
+        "invalid": "Adresse email invalide.",
+    })
+
+
+class ReinitialisationSerializer(serializers.Serializer):
+    """Lien reçu par email (uid + jeton) et nouveau mot de passe."""
+
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True, required=False)
+
+    LIEN_INVALIDE = "Ce lien n’est plus valide. Il a peut-être déjà servi ou a expiré (1 heure). Refaites une demande."
+
+    def validate(self, donnees):
+        try:
+            identifiant = force_str(urlsafe_base64_decode(donnees["uid"]))
+            utilisateur = Utilisateur.objects.get(pk=identifiant, is_active=True)
+        except (TypeError, ValueError, OverflowError, Utilisateur.DoesNotExist):
+            raise serializers.ValidationError(self.LIEN_INVALIDE)
+
+        # Le jeton change dès que le mot de passe change : un lien ne sert qu'une fois.
+        if not default_token_generator.check_token(utilisateur, donnees["token"]):
+            raise serializers.ValidationError(self.LIEN_INVALIDE)
+
+        if "password" in donnees:
+            try:
+                validate_password(donnees["password"], user=utilisateur)
+            except Exception as erreur:
+                raise serializers.ValidationError({"password": list(erreur.messages)})
 
         donnees["utilisateur"] = utilisateur
         return donnees

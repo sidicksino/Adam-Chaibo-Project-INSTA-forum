@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./HomePage.css";      // styles communs (barre du haut, cartes, tags, avatars)
 import "./QuestionPage.css";  // styles propres à cette page
 import {
   accepterReponse, basculerFavori, listerReponses, lireQuestion, modifierReponse, publierReponse,
   supprimerQuestion, supprimerReponse, voterQuestion, voterReponse,
 } from "../api";
-import { Avatar, Avis, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
+import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
+import TexteFormate, { OutilCode } from "../TexteFormate";
 
 const GradCap = () => (
   <svg width="44" height="28" viewBox="0 0 160 100" aria-hidden="true">
@@ -70,6 +71,9 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
   const [avis, afficherAvis] = useAvis();
   // Réponse en cours de modification : { id, texte, erreur, envoi } ou null
   const [edition, setEdition] = useState(null);
+  // Zones de texte, pour que le bouton « </> Code » insère au bon endroit
+  const zoneReponse = useRef(null);
+  const zoneEdition = useRef(null);
 
   useEffect(() => {
     Promise.all([lireQuestion(id), listerReponses(id)])
@@ -196,7 +200,10 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
           <GradCap />
           <span>INSTA-<b>FORUM</b></span>
         </a>
-        <MenuCompte user={user} onLogout={onLogout} />
+        <div className="home__actions">
+          <Cloche />
+          <MenuCompte user={user} onLogout={onLogout} />
+        </div>
       </header>
 
       <main className="detail">
@@ -236,7 +243,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                 <span>•</span><span>{pluriel(question.vues, "vue")}</span>
               </div>
 
-              <p className="detail__texte">{question.description}</p>
+              <TexteFormate texte={question.description} className="detail__texte" />
 
               <div className="question__tags">
                 <span className="tag">{question.categorie.nom}</span>
@@ -273,7 +280,10 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                   /* Modification de sa propre réponse, directement dans la page */
                   <form className="detail__edition" onSubmit={handleEnregistrerReponse} noValidate>
                     <textarea rows="5" value={edition.texte} aria-label="Modifier votre réponse" autoFocus
+                      ref={zoneEdition}
                       onChange={(e) => setEdition((ed) => ({ ...ed, texte: e.target.value }))} />
+                    <OutilCode zone={zoneEdition} valeur={edition.texte}
+                      setValeur={(texte) => setEdition((ed) => ({ ...ed, texte }))} />
                     {edition.erreur && <p className="detail__erreur" role="alert">{edition.erreur}</p>}
                     <div className="detail__outils">
                       <button type="button" onClick={() => setEdition(null)}>Annuler</button>
@@ -283,7 +293,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                     </div>
                   </form>
                 ) : (
-                  <p className="detail__texte">{r.contenu}</p>
+                  <TexteFormate texte={r.contenu} className="detail__texte" />
                 )}
 
                 <div className="detail__pied">
@@ -326,7 +336,9 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                 value={contenu}
                 onChange={(e) => setContenu(e.target.value)}
                 aria-label="Votre réponse"
+                ref={zoneReponse}
               />
+              <OutilCode zone={zoneReponse} valeur={contenu} setValeur={setContenu} />
               {erreurReponse && <p className="detail__erreur" role="alert">{erreurReponse}</p>}
               <button type="submit" className="home__ask" disabled={envoi}>
                 {envoi ? "Publication…" : "Publier ma réponse"}

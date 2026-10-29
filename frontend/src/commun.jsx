@@ -1,5 +1,6 @@
 /* ---------- Outils partagés entre les pages ---------- */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { lireNotifications, marquerNotificationsLues } from "./api";
 
 const COULEURS = ["#7c5cfc", "#0e9f6e", "#e5484d", "#f59e0b", "#0b5ed7", "#0891b2"];
 
@@ -58,12 +59,12 @@ export const Avis = ({ texte }) =>
 /* ---------- Menu du compte (clic sur l'avatar en haut à droite) ---------- */
 const PROFILS = { etudiant: "Étudiant", enseignant: "Enseignant", personnel: "Personnel" };
 
-export function MenuCompte({ user, onLogout }) {
+// Menu qui s'ouvre au clic et se ferme en cliquant ailleurs ou avec la touche Échap.
+// Renvoie [ouvert, setOuvert, zone] : zone est la ref à poser sur le bloc qui contient le menu.
+function useMenuDeroulant() {
   const [ouvert, setOuvert] = useState(false);
   const zone = useRef(null);
-  const nomComplet = `${user?.prenom ?? ""} ${user?.nom ?? ""}`.trim() || user?.username || "Invité";
 
-  // Fermer le menu en cliquant ailleurs ou avec la touche Échap
   useEffect(() => {
     if (!ouvert) return;
     const clicDehors = (e) => { if (!zone.current?.contains(e.target)) setOuvert(false); };
@@ -75,6 +76,13 @@ export function MenuCompte({ user, onLogout }) {
       document.removeEventListener("keydown", echap);
     };
   }, [ouvert]);
+
+  return [ouvert, setOuvert, zone];
+}
+
+export function MenuCompte({ user, onLogout }) {
+  const [ouvert, setOuvert, zone] = useMenuDeroulant();
+  const nomComplet = `${user?.prenom ?? ""} ${user?.nom ?? ""}`.trim() || user?.username || "Invité";
 
   return (
     <div className="compte" ref={zone}>
@@ -100,6 +108,103 @@ export function MenuCompte({ user, onLogout }) {
           <button type="button" role="menuitem" className="compte__deconnexion" onClick={onLogout}>
             Se déconnecter
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Cloche des notifications ---------- */
+const VERIFIER_TOUTES_LES = 30000; // millisecondes entre deux vérifications
+
+const texteNotification = (n) =>
+  n.type === "acceptee"
+    ? <><strong>{nomCourt(n.acteur)}</strong> a accepté votre réponse à « {n.question.titre} »</>
+    : <><strong>{nomCourt(n.acteur)}</strong> a répondu à votre question « {n.question.titre} »</>;
+
+export function Cloche() {
+  const [ouvert, setOuvert, zone] = useMenuDeroulant();
+  const [donnees, setDonnees] = useState({ non_lues: 0, notifications: [] });
+
+  const charger = useCallback(() => {
+    lireNotifications().then(setDonnees).catch(() => {
+      // Serveur injoignable : on garde l'affichage précédent et on réessaiera plus tard.
+    });
+  }, []);
+
+  // Vérifie au chargement, toutes les 30 s quand l'onglet est visible,
+  // et à chaque changement de page (ouvrir une question marque ses notifications comme lues).
+  useEffect(() => {
+    charger();
+    const minuteur = setInterval(() => { if (!document.hidden) charger(); }, VERIFIER_TOUTES_LES);
+    window.addEventListener("hashchange", charger);
+    window.addEventListener("focus", charger);
+    return () => {
+      clearInterval(minuteur);
+      window.removeEventListener("hashchange", charger);
+      window.removeEventListener("focus", charger);
+    };
+  }, [charger]);
+
+  // Recharger en ouvrant le menu, pour montrer les toutes dernières
+  const basculer = () => {
+    if (!ouvert) charger();
+    setOuvert(!ouvert);
+  };
+
+  const ouvrir = (n) => {
+    setOuvert(false);
+    if (!n.lue) marquerNotificationsLues(n.id).then(charger).catch(() => {});
+    window.location.hash = `/questions/${n.question.id}`;
+  };
+
+  const toutLire = () => {
+    // Affichage immédiat, puis confirmation par le serveur
+    setDonnees((d) => ({ non_lues: 0, notifications: d.notifications.map((n) => ({ ...n, lue: true })) }));
+    marquerNotificationsLues().then(charger).catch(charger);
+  };
+
+  const { non_lues: nonLues, notifications } = donnees;
+
+  return (
+    <div className="notifs" ref={zone}>
+      <button type="button" className="home__icon-btn" onClick={basculer}
+        aria-haspopup="true" aria-expanded={ouvert}
+        aria-label={nonLues ? `Notifications : ${nonLues} non lue${nonLues > 1 ? "s" : ""}` : "Notifications"}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 17h12c-2-1.5-2-4-2-7a4 4 0 0 0-8 0c0 3 0 5.5-2 7zM10 20a2 2 0 0 0 4 0" />
+        </svg>
+        {nonLues > 0 && <span className="notifs__pastille">{nonLues > 9 ? "9+" : nonLues}</span>}
+      </button>
+
+      {ouvert && (
+        <div className="notifs__menu card">
+          <div className="notifs__entete">
+            <strong>Notifications</strong>
+            {nonLues > 0 && <button type="button" onClick={toutLire}>Tout marquer comme lu</button>}
+          </div>
+
+          {notifications.length === 0 ? (
+            <p className="notifs__vide">
+              Aucune notification pour le moment. Vous serez prévenu quand quelqu’un répondra à vos questions.
+            </p>
+          ) : (
+            <ul>
+              {notifications.map((n) => (
+                <li key={n.id}>
+                  <button type="button" className={`notifs__ligne${n.lue ? "" : " is-non-lue"}`} onClick={() => ouvrir(n)}>
+                    <Avatar name={`${n.acteur.prenom} ${n.acteur.nom}`} color={couleurPour(n.acteur.username)} size={36} />
+                    <span className="notifs__texte">
+                      <span>{texteNotification(n)}</span>
+                      <small>{ilYA(n.date)}</small>
+                    </span>
+                    {!n.lue && <i className="notifs__point" aria-label="non lue" />}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import "./HomePage.css";
 import { basculerFavori, listerCategories, listerQuestions, lireClassement, lireStatistiques } from "../api";
-import { Avatar, Avis, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
+import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
+import { sansMiseEnForme } from "../TexteFormate";
 
 
 /* ---------- Icônes ---------- */
@@ -20,7 +21,6 @@ const I = {
   star: <Icon><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8z" /></Icon>,
   etoilePleine: <Icon fill="currentColor"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8z" /></Icon>,
   trophy: <Icon><path d="M7 4h10v6a5 5 0 0 1-10 0zM12 15v4M8 20h8" /></Icon>,
-  bell: <Icon><path d="M6 17h12c-2-1.5-2-4-2-7a4 4 0 0 0-8 0c0 3 0 5.5-2 7zM10 20a2 2 0 0 0 4 0" /></Icon>,
   plus: <Icon><path d="M12 5v14M5 12h14" /></Icon>,
   eye: <Icon size={16}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></Icon>,
   check: <Icon size={14}><path d="M4 12.5l5 5L20 6" /></Icon>,
@@ -127,7 +127,7 @@ const versCarte = (q) => ({
   answers: q.reponses,
   solved: q.resolue,
   title: q.titre,
-  excerpt: extrait(q.description),
+  excerpt: extrait(sansMiseEnForme(q.description)),
   description: q.description,
   tags: [q.categorie.nom, ...q.tags],
   categorieId: q.categorie.id,
@@ -263,10 +263,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             {/* Le texte est masqué sur téléphone (voir HomePage.css) : seul le « + » reste */}
             {I.plus} <span>Poser une question</span>
           </button>
-          <button className="home__icon-btn" aria-label="Notifications" title="Notifications"
-            onClick={() => afficherAvis("Les notifications ne sont pas encore disponibles.")}>
-            {I.bell}
-          </button>
+          <Cloche />
           <MenuCompte user={user} onLogout={onLogout} />
         </div>
       </header>
