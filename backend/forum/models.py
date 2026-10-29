@@ -30,6 +30,12 @@ class Tag(models.Model):
 
 
 class Question(models.Model):
+
+    class Difficulte(models.TextChoices):
+        DEBUTANT = "debutant", "Débutant"
+        INTERMEDIAIRE = "intermediaire", "Intermédiaire"
+        AVANCE = "avance", "Avancé"
+
     titre = models.CharField("titre", max_length=200)
     description = models.TextField("description")
     categorie = models.ForeignKey(
@@ -39,6 +45,11 @@ class Question(models.Model):
     auteur = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="questions", verbose_name="auteur"
     )
+    difficulte = models.CharField(
+        "niveau de difficulté", max_length=20, choices=Difficulte.choices, blank=True, default=""
+    )
+    code_extrait = models.TextField("extrait de code", blank=True, default="")
+    langage = models.CharField("langage", max_length=30, blank=True, default="")
     date_creation = models.DateTimeField("date de création", auto_now_add=True)
     date_modification = models.DateTimeField("date de modification", null=True, blank=True)
     votes = models.IntegerField("votes", default=0)
@@ -175,3 +186,20 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.get_type_display()} → {self.destinataire}"
+
+
+class CaptureQuestion(models.Model):
+
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="captures", verbose_name="question"
+    )
+    image = models.ImageField("image", upload_to="captures/")
+    date_ajout = models.DateTimeField("date d'ajout", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "capture d'écran"
+        verbose_name_plural = "captures d'écran"
+        ordering = ["date_ajout"]
+
+    def __str__(self):
+        return f"Capture pour « {self.question} »"

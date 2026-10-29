@@ -441,6 +441,19 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
         setCategorie(String(q.categorie.id));
         setDescription(q.description);
         setTags(Array.isArray(q.tags) ? q.tags : []);
+        setDifficulte(q.difficulte || "");
+        setCodeExtrait(q.code_extrait || "");
+        setLangage(q.langage || "javascript");
+        if (Array.isArray(q.captures)) {
+          const apiBase = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://127.0.0.1:8000";
+          setCaptures(
+            q.captures.map((c) => ({
+              id: c.id,
+              nom: "Capture",
+              apercu: c.image.startsWith("http") ? c.image : `${apiBase}${c.image}`,
+            }))
+          );
+        }
         setPret(true);
       })
       .catch((err) => setErreur(err.message));
@@ -475,14 +488,19 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
 
     try {
       setEnvoi(true);
-      await onSubmit({
-        titre: titre.trim(),
-        categorie_id: Number(categorie),
-        description: description.trim(),
-        tags: tags,
-        ...(difficulte && { difficulte }),
-        ...(codeExtrait.trim() && { code_extrait: codeExtrait.trim(), langage }),
-      });
+      const nouvellesImages = captures.filter((c) => c.fichier).map((c) => c.fichier);
+      await onSubmit(
+        {
+          titre: titre.trim(),
+          categorie_id: Number(categorie),
+          description: description.trim(),
+          tags: tags,
+          difficulte: difficulte || "",
+          code_extrait: codeExtrait.trim(),
+          langage: codeExtrait.trim() ? langage : "",
+        },
+        nouvellesImages
+      );
     } catch (err) {
       setErreur(err?.message || "Impossible d'enregistrer la question. Réessayez.");
       setEnvoi(false);

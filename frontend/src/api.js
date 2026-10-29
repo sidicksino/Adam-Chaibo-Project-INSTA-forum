@@ -82,6 +82,26 @@ export const lireQuestion = (id) => requete(`/questions/${id}/`);
 export const modifierQuestion = (id, donnees) =>
   requete(`/questions/${id}/`, { methode: "PATCH", corps: donnees });
 
+export async function televerserCaptures(questionId, fichiers) {
+  if (!fichiers || fichiers.length === 0) return [];
+  const form = new FormData();
+  fichiers.forEach((f) => form.append("images", f));
+  const jeton = lireJeton();
+  const enTetes = {};
+  if (jeton) enTetes.Authorization = `Token ${jeton}`;
+
+  const reponse = await fetch(`${API_URL}/questions/${questionId}/captures/`, {
+    method: "POST",
+    headers: enTetes,
+    body: form,
+  });
+  if (!reponse.ok) {
+    const donnees = await reponse.json().catch(() => null);
+    throw new Error(messageErreur(donnees));
+  }
+  return reponse.json();
+}
+
 export const supprimerQuestion = (id) => requete(`/questions/${id}/`, { methode: "DELETE" });
 
 export const modifierReponse = (id, contenu) =>

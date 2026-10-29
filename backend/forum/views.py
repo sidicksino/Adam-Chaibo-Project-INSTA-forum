@@ -10,11 +10,11 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.response import Response
 
 from .models import (
-    Categorie, Favori, Notification, Question, Reponse, Tag, VoteQuestion, VoteReponse, VueQuestion,
+    Categorie, CaptureQuestion, Favori, Notification, Question, Reponse, Tag, VoteQuestion, VoteReponse, VueQuestion,
 )
 from .serializers import (
-    AuteurSerializer, CategorieSerializer, NotificationSerializer, QuestionSerializer, ReponseSerializer,
-    VoteSerializer,
+    AuteurSerializer, CaptureSerializer, CategorieSerializer, NotificationSerializer, QuestionSerializer,
+    ReponseSerializer, VoteSerializer,
 )
 
 
@@ -73,7 +73,7 @@ class QuestionViewSet(
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = (
         Question.objects.select_related("auteur", "categorie")
-        .prefetch_related("tags")
+        .prefetch_related("tags", "captures")
         .annotate(nb_reponses=Count("reponses"))
         .order_by("-date_creation")
     )
@@ -145,6 +145,21 @@ class QuestionViewSet(
         if not cree:
             favori.delete()
         return Response({"favori": cree})
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def captures(self, request, pk=None):
+        question = self.get_object()
+        verifier_auteur(request, question, "ajouter des captures à cette question")
+        fichiers = request.FILES.getlist("images")
+        if not fichiers:
+            return Response({"detail": "Aucun fichier envoyé."}, status=status.HTTP_400_BAD_REQUEST)
+        nouvelles = []
+        for f in fichiers:
+            if not f.content_type.startswith("image/"):
+                continue
+            capture = CaptureQuestion.objects.create(question=question, image=f)
+            nouvelles.append(capture)
+        return Response(CaptureSerializer(nouvelles, many=True).data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])

@@ -232,8 +232,38 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
 
               <TexteFormate texte={question.description} className="detail__texte" />
 
+              {question.code_extrait && (
+                <div className="detail__code-extrait" style={{ margin: "16px 0" }}>
+                  <TexteFormate texte={`\`\`\`${question.langage || ""}\n${question.code_extrait}\n\`\`\``} />
+                </div>
+              )}
+
+              {question.captures && question.captures.length > 0 && (
+                <div className="detail__captures" style={{ display: "flex", flexWrap: "wrap", gap: "12px", margin: "16px 0" }}>
+                  {question.captures.map((cap) => {
+                    const src = cap.image.startsWith("http")
+                      ? cap.image
+                      : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || "http://127.0.0.1:8000"}${cap.image}`;
+                    return (
+                      <a key={cap.id} href={src} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={src}
+                          alt="Capture d'écran"
+                          style={{ maxWidth: "320px", maxHeight: "200px", borderRadius: "8px", border: "1px solid #dde6f3", objectFit: "cover" }}
+                        />
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="question__tags">
                 <span className="tag">{question.categorie.nom}</span>
+                {question.difficulte && (
+                  <span className="tag tag--difficulte" style={{ background: "#eef2ff", color: "#4338ca", fontWeight: 600 }}>
+                    {question.difficulte === "debutant" ? "Débutant" : question.difficulte === "intermediaire" ? "Intermédiaire" : "Avancé"}
+                  </span>
+                )}
                 {question.tags.map((t) => <span key={t} className="tag">{t}</span>)}
               </div>
 

@@ -9,7 +9,7 @@ import QuestionPage from "./pages/QuestionPage";
 import MotDePassePage from "./pages/MotDePassePage";
 import ProfilPage from "./pages/ProfilPage";
 import {
-  connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, utilisateurConnecte,
+  connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, televerserCaptures, utilisateurConnecte,
 } from "./api";
 
 localStorage.removeItem("insta_users");
@@ -128,8 +128,11 @@ export default function App() {
     aller("/connexion");
   };
 
-  const handleAddQuestion = async (data) => {
+  const handleAddQuestion = async (data, files) => {
     const question = await publierQuestion(data);
+    if (files && files.length > 0) {
+      await televerserCaptures(question.id, files).catch(() => {});
+    }
     aller(`/questions/${question.id}`);
   };
 
@@ -205,8 +208,11 @@ export default function App() {
         key={route.id}
         questionId={route.id}
         user={currentUser}
-        onSubmit={async (data) => {
+        onSubmit={async (data, files) => {
           await modifierQuestion(route.id, data);
+          if (files && files.length > 0) {
+            await televerserCaptures(route.id, files).catch(() => {});
+          }
           aller(`/questions/${route.id}`);
         }}
         onBack={() => aller(`/questions/${route.id}`)}

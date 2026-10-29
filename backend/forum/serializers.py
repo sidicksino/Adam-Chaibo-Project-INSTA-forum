@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Categorie, Notification, Question, Reponse, Tag
+from .models import Categorie, CaptureQuestion, Notification, Question, Reponse, Tag
 
 
 class CategorieSerializer(serializers.ModelSerializer):
@@ -17,6 +17,13 @@ class AuteurSerializer(serializers.Serializer):
     nom = serializers.CharField(source="last_name")
 
 
+class CaptureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaptureQuestion
+        fields = ["id", "image", "date_ajout"]
+        read_only_fields = ["date_ajout"]
+
+
 class QuestionSerializer(serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
     categorie = CategorieSerializer(read_only=True)
@@ -25,15 +32,15 @@ class QuestionSerializer(serializers.ModelSerializer):
         queryset=Categorie.objects.all(),
         write_only=True,
         error_messages={
-            "required": "Choisissez une catégorie.",
-            "does_not_exist": "Cette catégorie n’existe pas.",
+            "required": "Choisissez une cat\u00e9gorie.",
+            "does_not_exist": "Cette cat\u00e9gorie n\u2019existe pas.",
         },
     )
     tags = serializers.ListField(
         child=serializers.CharField(
             max_length=30,
             allow_blank=True,
-            error_messages={"max_length": "Un tag ne peut pas dépasser 30 caractères."},
+            error_messages={"max_length": "Un tag ne peut pas d\u00e9passer 30 caract\u00e8res."},
         ),
         required=False,
         write_only=True,
@@ -43,13 +50,15 @@ class QuestionSerializer(serializers.ModelSerializer):
     reponses = serializers.SerializerMethodField()
     mon_vote = serializers.SerializerMethodField()
     favori = serializers.SerializerMethodField()
+    captures = CaptureSerializer(many=True, read_only=True)
 
     class Meta:
         model = Question
         fields = [
             "id", "titre", "description", "categorie", "categorie_id", "tags",
-            "auteur", "date_creation", "date_modification", "votes", "vues", "resolue", "reponses",
-            "mon_vote", "favori",
+            "auteur", "difficulte", "code_extrait", "langage",
+            "date_creation", "date_modification", "votes", "vues", "resolue", "reponses",
+            "mon_vote", "favori", "captures",
         ]
         read_only_fields = ["date_creation", "date_modification", "votes", "vues", "resolue"]
 
@@ -65,13 +74,13 @@ class QuestionSerializer(serializers.ModelSerializer):
     def validate_titre(self, valeur):
         valeur = valeur.strip()
         if len(valeur) < 10:
-            raise serializers.ValidationError("Le titre doit contenir au moins 10 caractères.")
+            raise serializers.ValidationError("Le titre doit contenir au moins 10 caract\u00e8res.")
         return valeur
 
     def validate_description(self, valeur):
         valeur = valeur.strip()
         if len(valeur) < 20:
-            raise serializers.ValidationError("La description doit contenir au moins 20 caractères.")
+            raise serializers.ValidationError("La description doit contenir au moins 20 caract\u00e8res.")
         return valeur
 
     def validate_tags(self, valeurs):
@@ -115,7 +124,7 @@ class ReponseSerializer(serializers.ModelSerializer):
         fields = ["id", "contenu", "auteur", "date_creation", "date_modification", "acceptee", "votes", "mon_vote"]
         read_only_fields = ["date_creation", "date_modification", "acceptee", "votes"]
         extra_kwargs = {
-            "contenu": {"error_messages": {"blank": "Écrivez votre réponse avant de la publier."}},
+            "contenu": {"error_messages": {"blank": "\u00c9crivez votre r\u00e9ponse avant de la publier."}},
         }
 
     def get_mon_vote(self, reponse):
@@ -124,7 +133,7 @@ class ReponseSerializer(serializers.ModelSerializer):
     def validate_contenu(self, valeur):
         valeur = valeur.strip()
         if len(valeur) < 10:
-            raise serializers.ValidationError("La réponse doit contenir au moins 10 caractères.")
+            raise serializers.ValidationError("La r\u00e9ponse doit contenir au moins 10 caract\u00e8res.")
         return valeur
 
 
