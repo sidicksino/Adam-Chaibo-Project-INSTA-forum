@@ -50,7 +50,12 @@ async function requete(chemin, { methode = "GET", corps } = {}) {
 
   // 204 : réponse sans contenu
   const donnees = reponse.status === 204 ? null : await reponse.json().catch(() => null);
-  if (!reponse.ok) throw new Error(messageErreur(donnees));
+  if (!reponse.ok) {
+    const erreur = new Error(messageErreur(donnees));
+    // Détail par champ (ex. { username: ["Ce nom d'utilisateur est déjà pris."] }), pour les formulaires
+    erreur.champs = donnees && typeof donnees === "object" ? donnees : {};
+    throw erreur;
+  }
   return donnees;
 }
 

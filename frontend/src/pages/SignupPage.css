@@ -1,8 +1,22 @@
 /* Styles propres à la page de création de compte
    (le reste vient de LoginPage.css) */
 
-.login__form--signup h2 { font-size: 2.5rem; margin-bottom: 10px; }
-.login__form--signup .login__lead { margin-bottom: 28px; font-size: 1rem; }
+.login__form--signup h2 { font-size: 2.25rem; margin-bottom: 8px; }
+.login__form--signup .login__lead { margin-bottom: 20px; font-size: 1rem; }
+
+/* Petits titres de section : Vous / À l'INSTA / Votre compte */
+.signup__section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 10px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.signup__section::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
 .row { display: flex; gap: 16px; }
 
@@ -12,9 +26,9 @@
   margin-bottom: 16px;
   text-align: left;
 }
-.field-wrap .field { height: 58px; margin-bottom: 0; }
+.field-wrap .field { height: 54px; margin-bottom: 0; }
 
-.field--error { border-color: #e5484d; }
+.field--error { border-color: #e5484d; background: #fffafa; }
 .field--error:focus-within {
   border-color: #e5484d;
   box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.18);
@@ -50,12 +64,26 @@
 .check--top a { color: var(--blue-600); text-decoration: none; }
 .check--top a:hover { text-decoration: underline; }
 
-.btn--signup { height: 64px; font-size: 1.125rem; }
+.btn--signup { height: 58px; font-size: 1.0625rem; }
+
+/* Solidité du mot de passe : 4 barres qui se remplissent */
+.solidite { display: flex; flex-direction: column; gap: 6px; margin: -8px 0 16px; text-align: left; }
+.solidite__barres { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.solidite__barres span { height: 5px; border-radius: 999px; background: var(--border); transition: background 0.2s; }
+.solidite small { color: var(--muted); font-size: 0.8125rem; }
+.solidite.is-faible .is-pleine { background: #e5484d; }
+.solidite.is-faible strong { color: #b42318; }
+.solidite.is-moyen .is-pleine { background: #f59e0b; }
+.solidite.is-moyen strong { color: #b45309; }
+.solidite.is-bon .is-pleine { background: #1766f0; }
+.solidite.is-bon strong { color: #0f52cc; }
+.solidite.is-excellent .is-pleine { background: #16955a; }
+.solidite.is-excellent strong { color: #11804c; }
 
 .signup__switch {
   margin: 20px 0 0;
   font-size: 0.9375rem;
-  color: #4a5b76;
+  color: var(--muted);
 }
 .signup__switch .link { font-weight: 600; }
 

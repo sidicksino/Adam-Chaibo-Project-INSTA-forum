@@ -1,16 +1,19 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
+/* Couleurs du design system INSTA-FORUM (frontend/images/design-system.png),
+   les mêmes que la page d'accueil */
 :root {
-  --blue-900: #12376f;
-  --blue-700: #1b4da3;
-  --blue-600: #0b5ed7;
-  --blue-400: #4d8bf0;
-  --blue-300: #5b9bff;
-  --ink: #0b1220;
-  --muted: #4a74b5;
+  --blue-900: #0f2a5c;
+  --blue-700: #0f52cc;
+  --blue-600: #1766f0;
+  --blue-400: #1766f0;
+  --blue-300: #8fb8ff;
+  --blue-soft: #e7effd;
+  --ink: #0f2a5c;
+  --muted: #5b6b85;
   --placeholder: #8a9bb5;
-  --border: #d6dfec;
-  --bg-right: #f7faff;
+  --border: #dde6f3;
+  --bg-right: #f4f7fc;
 }
 
 * { box-sizing: border-box; }
@@ -28,8 +31,10 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   color: #fff;
   text-align: center;
   background:
-    linear-gradient(180deg, rgba(71, 130, 231, 0.85) 0%, rgba(14, 45, 92, 0.75) 100%),
-    url("/images/insta-building.jpg") center / cover no-repeat;
+    linear-gradient(180deg, rgba(23, 102, 240, 0.86) 0%, rgba(15, 42, 92, 0.78) 100%),
+    /* Photo compressée : 140 Ko au lieu de 6 Mo (original dans frontend/images/) */
+    url("/images/insta-building.webp") center / cover no-repeat,
+    #1557ea;
 }
 .login__brand-top {
   display: flex;
@@ -40,7 +45,7 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
 .login__title {
   margin: 20px 0 14px;
   font-size: clamp(2.5rem, 4.6vw, 4.25rem);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 1;
 }
@@ -117,13 +122,15 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   text-align: center;
 }
 .login__form h2 {
-  margin: 0 0 14px;
-  font-size: 2.75rem;
-  font-weight: 700;
+  margin: 0 0 12px;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
 .login__lead {
-  margin: 0 0 40px;
-  font-size: 1.0625rem;
+  margin: 0 0 36px;
+  font-size: 1rem;
   line-height: 1.55;
   color: var(--muted);
 }
@@ -133,20 +140,21 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   display: flex;
   align-items: center;
   gap: 14px;
-  height: 64px;
-  margin-bottom: 22px;
-  padding: 0 20px;
+  height: 58px;
+  margin-bottom: 18px;
+  padding: 0 18px;
   background: #fff;
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(11, 42, 92, 0.04);
-  color: #3a5a8c;
+  box-shadow: 0 4px 16px rgba(15, 42, 92, 0.04);
+  color: var(--muted);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .field:focus-within {
   border-color: var(--blue-400);
-  box-shadow: 0 0 0 3px rgba(77, 139, 240, 0.2);
+  box-shadow: 0 0 0 3px rgba(23, 102, 240, 0.15);
 }
+.field:focus-within .field__icon { color: var(--blue-600); }
 .field__icon { display: flex; }
 .field input {
   flex: 1;
@@ -165,9 +173,10 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   border: 0;
   border-radius: 6px;
   background: none;
-  color: #3a5a8c;
+  color: var(--muted);
   cursor: pointer;
 }
+.field__toggle:hover { color: var(--blue-600); }
 .field__toggle:focus-visible { outline: 2px solid var(--blue-400); }
 
 /* Options */
@@ -178,10 +187,10 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   margin-bottom: 26px;
   font-size: 0.9375rem;
 }
-.check { display: flex; align-items: center; gap: 10px; color: #2b3a52; cursor: pointer; }
+.check { display: flex; align-items: center; gap: 10px; color: #22355a; cursor: pointer; }
 .check input {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   accent-color: var(--blue-600);
   cursor: pointer;
@@ -191,7 +200,7 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   border: 0;
   background: none;
   font: inherit;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--blue-600);
   cursor: pointer;
 }
@@ -199,18 +208,20 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
 
 .login__succes {
   margin: -8px 0 18px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #e7f6ec;
-  color: #1e7a45;
+  padding: 12px 14px;
+  border: 1px solid #ccecdc;
+  border-radius: 12px;
+  background: #eaf8f1;
+  color: #11804c;
   font-size: 0.875rem;
   text-align: left;
 }
 
 .login__error {
   margin: -8px 0 18px;
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid #f6cfcd;
+  border-radius: 12px;
   background: #fdecec;
   color: #b42318;
   font-size: 0.875rem;
@@ -231,25 +242,26 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
 }
 .btn:active { transform: translateY(1px); }
-.btn:focus-visible { outline: 3px solid rgba(77, 139, 240, 0.5); outline-offset: 2px; }
+.btn:focus-visible { outline: 3px solid rgba(23, 102, 240, 0.35); outline-offset: 2px; }
+/* Mêmes boutons que « Poser une question » sur la page d'accueil */
 .btn--primary {
-  height: 68px;
+  height: 58px;
   border: 0;
   background: var(--blue-600);
   color: #fff;
-  font-size: 1.1875rem;
-  box-shadow: 0 6px 14px rgba(11, 94, 215, 0.28);
+  font-size: 1.0625rem;
+  box-shadow: 0 6px 14px rgba(23, 102, 240, 0.28);
 }
-.btn--primary:hover { background: #0a52bd; }
+.btn--primary:hover { background: var(--blue-700); }
 .btn--primary:disabled { opacity: 0.7; cursor: wait; }
 .btn--outline {
-  height: 64px;
-  border: 2px solid var(--blue-400);
+  height: 56px;
+  border: 1.5px solid #c9dcfa;
   background: #fff;
   color: var(--blue-600);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
 }
-.btn--outline:hover { background: #eef5ff; }
+.btn--outline:hover { border-color: var(--blue-600); background: var(--blue-soft); }
 
 /* Séparateur OU */
 .login__or {
@@ -259,29 +271,35 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   margin: 26px 0;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #7c8da8;
+  color: var(--placeholder);
 }
 .login__or::before,
 .login__or::after {
   content: "";
   flex: 1;
   height: 1.5px;
-  background: #dce4f0;
+  background: var(--border);
 }
 
 .login__note {
   margin: 30px 0 0;
   font-size: 0.8125rem;
   line-height: 1.55;
-  color: #6e809b;
+  color: var(--muted);
 }
 
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .login { grid-template-columns: 1fr; }
-  .login__brand-top { padding-top: 48px; }
-  .login__photo { min-height: 220px; flex: none; }
-  .login__form h2 { font-size: 2.125rem; }
+  /* Sur téléphone, le panneau bleu devient un simple bandeau : le formulaire reste visible sans défiler */
+  .login__brand-top { padding: 28px 20px 26px; }
+  .login__brand-top svg { width: 72px; height: 46px; }
+  .login__title { margin: 10px 0 8px; font-size: 2.25rem; }
+  .login__subtitle { font-size: 0.9375rem; }
+  .login__divider, .login__keywords, .login__photo { display: none; }
+  .login__panel { align-items: flex-start; padding: 28px 16px 40px; }
+  .login__form h2 { font-size: 1.875rem; }
+  .login__lead { margin-bottom: 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }

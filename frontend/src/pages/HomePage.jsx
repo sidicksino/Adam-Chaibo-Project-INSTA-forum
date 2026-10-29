@@ -357,7 +357,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
                 <h1>Bienvenue{nomComplet ? `, ${nomComplet}` : ""} sur INSTA-FORUM</h1>
                 <p>Posez vos questions, partagez vos connaissances et progressez ensemble.</p>
                 {/* Illustration générée avec Google Flow (fond détouré) */}
-                <img className="home__hero-image" src="/images/banniere-idees.png" alt="" />
+                <img className="home__hero-image" src="/images/banniere-idees.webp" alt="" />
               </section>
 
               <ul className="stats" aria-label="Statistiques du forum">

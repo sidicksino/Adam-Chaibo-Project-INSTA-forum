@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -29,7 +30,14 @@ class InscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Utilisateur
         fields = ["username", "email", "prenom", "nom", "profil", "niveau", "password"]
-        extra_kwargs = {"niveau": {"required": False}}
+        # Le contrôle « déjà pris » de Django est remplacé par validate_username / validate_email :
+        # leurs messages sont plus clairs et ils ignorent les majuscules.
+        # La contrainte d'unicité reste dans la base de données.
+        extra_kwargs = {
+            "niveau": {"required": False},
+            "username": {"validators": [UnicodeUsernameValidator()]},
+            "email": {"validators": []},
+        }
 
     def validate_username(self, valeur):
         if Utilisateur.objects.filter(username__iexact=valeur).exists():

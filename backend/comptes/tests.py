@@ -41,8 +41,13 @@ class InscriptionTests(APITestCase):
         self.client.post(self.url, inscription(), format="json")
         reponse = self.client.post(self.url, inscription(username="AWA", email="AWA@insta.td"), format="json")
         self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(reponse.data["username"], ["Ce nom d’utilisateur est déjà pris."])
+        self.assertEqual(reponse.data["email"], ["Un compte existe déjà avec cette adresse email."])
+
+    def test_caracteres_interdits_dans_le_nom_utilisateur(self):
+        reponse = self.client.post(self.url, inscription(username="awa diallo!"), format="json")
+        self.assertEqual(reponse.status_code, 400)
         self.assertIn("username", reponse.data)
-        self.assertIn("email", reponse.data)
 
     def test_niveau_obligatoire_pour_un_etudiant(self):
         reponse = self.client.post(self.url, inscription(niveau=""), format="json")

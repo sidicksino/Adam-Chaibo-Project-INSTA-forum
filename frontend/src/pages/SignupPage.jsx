@@ -86,6 +86,42 @@ function Field({ icon, error, right, children }) {
   );
 }
 
+/* ---------- Solidité du mot de passe ----------
+   Simple indication pour aider à choisir : la vraie vérification est faite par le serveur
+   (8 caractères minimum, pas trop courant, pas uniquement des chiffres). */
+const NIVEAUX = [
+  { texte: "Trop court", classe: "is-faible" },
+  { texte: "Faible", classe: "is-faible" },
+  { texte: "Moyen", classe: "is-moyen" },
+  { texte: "Bon", classe: "is-bon" },
+  { texte: "Excellent", classe: "is-excellent" },
+];
+
+function noterMotDePasse(mdp) {
+  if (mdp.length < 8) return 0;
+  let points = 1;
+  if (mdp.length >= 12) points += 1;
+  if (/[a-z]/.test(mdp) && /[A-Z]/.test(mdp)) points += 1;
+  if (/\d/.test(mdp)) points += 0.5;
+  if (/[^A-Za-z0-9]/.test(mdp)) points += 0.5;
+  if (/^\d+$/.test(mdp)) points = 1; // uniquement des chiffres : refusé par le serveur
+  return Math.min(4, Math.floor(points));
+}
+
+function Solidite({ motDePasse }) {
+  if (!motDePasse) return null;
+  const note = noterMotDePasse(motDePasse);
+  const { texte, classe } = NIVEAUX[note];
+  return (
+    <div className={`solidite ${classe}`} aria-live="polite">
+      <div className="solidite__barres" aria-hidden="true">
+        {[1, 2, 3, 4].map((n) => <span key={n} className={n <= Math.max(note, 1) ? "is-pleine" : ""} />)}
+      </div>
+      <small>Solidité : <strong>{texte}</strong>{note < 3 && " · mélangez majuscules, chiffres et symboles"}</small>
+    </div>
+  );
+}
+
 /* ---------- Validation ---------- */
 const initial = {
   prenom: "", nom: "", username: "", email: "",
@@ -135,10 +171,20 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
     try {
       setLoading(true);
       const { confirm, terms, ...payload } = values;
-      // À brancher sur votre API (ex. POST /api/auth/register)
       await onSubmit?.(payload);
     } catch (err) {
-      setServerError(err?.message || "Impossible de créer le compte. Réessayez.");
+      // Les erreurs qui concernent un champ s'affichent sous ce champ, les autres en bas du formulaire
+      const parChamp = {};
+      const autres = [];
+      Object.entries(err?.champs ?? {}).forEach(([champ, messages]) => {
+        const texte = [messages].flat().join(" ");
+        if (champ in initial) parChamp[champ] = texte;
+        else autres.push(texte);
+      });
+      setErrors(parChamp);
+      if (Object.keys(parChamp).length === 0 || autres.length) {
+        setServerError(autres.join(" ") || err?.message || "Impossible de créer le compte. Réessayez.");
+      }
     } finally {
       setLoading(false);
     }
@@ -180,6 +226,7 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
           <h2>Créer un compte</h2>
           <p className="login__lead">Rejoignez la communauté et partagez vos connaissances.</p>
 
+          <p className="signup__section">Vous</p>
           <div className="row">
             <Field icon={<UserIcon />} error={errors.prenom}>
               <input type="text" placeholder="Prénom" autoComplete="given-name"
@@ -191,16 +238,7 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
             </Field>
           </div>
 
-          <Field icon={<UserIcon />} error={errors.username}>
-            <input type="text" placeholder="Nom d’utilisateur" autoComplete="username"
-              value={values.username} onChange={set("username")} aria-label="Nom d’utilisateur" />
-          </Field>
-
-          <Field icon={<MailIcon />} error={errors.email}>
-            <input type="email" placeholder="Adresse email" autoComplete="email"
-              value={values.email} onChange={set("email")} aria-label="Adresse email" />
-          </Field>
-
+          <p className="signup__section">À l’INSTA</p>
           <div className="row">
             <Field icon={<UsersIcon />} error={errors.profil} right={<ChevronIcon />}>
               <select value={values.profil} onChange={set("profil")} aria-label="Profil"
@@ -224,6 +262,17 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
             </Field>
           </div>
 
+          <p className="signup__section">Votre compte</p>
+          <Field icon={<UserIcon />} error={errors.username}>
+            <input type="text" placeholder="Nom d’utilisateur" autoComplete="username"
+              value={values.username} onChange={set("username")} aria-label="Nom d’utilisateur" />
+          </Field>
+
+          <Field icon={<MailIcon />} error={errors.email}>
+            <input type="email" placeholder="Adresse email" autoComplete="email"
+              value={values.email} onChange={set("email")} aria-label="Adresse email" />
+          </Field>
+
           <Field icon={<LockIcon />} error={errors.password}
             right={
               <button type="button" className="field__toggle" onClick={() => setShowPwd((s) => !s)}
@@ -234,6 +283,7 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
             <input type={showPwd ? "text" : "password"} placeholder="Mot de passe" autoComplete="new-password"
               value={values.password} onChange={set("password")} aria-label="Mot de passe" />
           </Field>
+          <Solidite motDePasse={values.password} />
 
           <Field icon={<LockIcon />} error={errors.confirm}
             right={
