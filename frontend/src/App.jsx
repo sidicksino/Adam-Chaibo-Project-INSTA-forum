@@ -12,16 +12,9 @@ import {
   connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, utilisateurConnecte,
 } from "./api";
 
-// Anciennes données enregistrées dans le navigateur : tout est désormais sur le serveur.
 localStorage.removeItem("insta_users");
 localStorage.removeItem("insta_questions");
 
-/* ---------- Adresses des pages ----------
-   L'adresse est placée après le « # » (ex. http://localhost:5173/#/questions/12) :
-   actualiser la page ou utiliser le bouton Retour du navigateur fonctionne,
-   et aucun réglage n'est nécessaire sur le serveur qui héberge le site. */
-
-// Menus de la page d'accueil et leur adresse
 const MENUS = {
   "Accueil": "/",
   "Questions": "/questions",
@@ -37,7 +30,6 @@ const aller = (chemin) => {
   window.location.hash = chemin;
 };
 
-// Transforme l'adresse en page à afficher
 function analyser(adresse) {
   const [chemin, recherche = ""] = adresse.split("?");
   const parametres = new URLSearchParams(recherche);
@@ -47,7 +39,6 @@ function analyser(adresse) {
   if (chemin === "/poser") return { page: "poser" };
   if (chemin === "/mot-de-passe-oublie") return { page: "oubli" };
 
-  // Lien reçu par email : #/reinitialiser/<uid>/<jeton>
   const lien = chemin.match(/^\/reinitialiser\/([\w-]+)\/([\w-]+)$/);
   if (lien) return { page: "reinitialiser", uid: lien[1], token: lien[2] };
 
@@ -66,7 +57,6 @@ function analyser(adresse) {
     return { page: "accueil", menu, categorie: menu === "Questions" ? categorie : null };
   }
 
-  // Adresse inconnue : on affiche l'accueil
   return { page: "accueil", menu: "Accueil", categorie: null };
 }
 
@@ -85,14 +75,11 @@ export default function App() {
   const [adresse, setAdresse] = useState(lireAdresse);
   const [currentUser, setCurrentUser] = useState(null);
   const [chargement, setChargement] = useState(true);
-  // Message affiché sur la page de connexion (ex. après une inscription réussie)
   const [messageConnexion, setMessageConnexion] = useState("");
-  // Dernière vue de l'accueil, pour que « Retour » y ramène (ex. #/favoris)
   const derniereVue = useRef("/");
 
   const route = analyser(adresse);
 
-  // Suivre les changements d'adresse (liens, bouton Retour du navigateur)
   useEffect(() => {
     const surChangement = () => {
       setAdresse(lireAdresse());
@@ -102,7 +89,6 @@ export default function App() {
     return () => window.removeEventListener("hashchange", surChangement);
   }, []);
 
-  // Au chargement : si un jeton est enregistré, on reconnecte l'utilisateur.
   useEffect(() => {
     utilisateurConnecte().then((utilisateur) => {
       if (utilisateur) setCurrentUser(utilisateur);
@@ -112,8 +98,6 @@ export default function App() {
 
   if (route.page === "accueil") derniereVue.current = adresse;
 
-  // Titre de l'onglet du navigateur
-  // Pages accessibles sans être connecté
   const PAGES_PUBLIQUES = ["inscription", "oubli", "reinitialiser"];
   const pageAffichee = currentUser || PAGES_PUBLIQUES.includes(route.page) ? route.page : "connexion";
   useEffect(() => {
@@ -121,27 +105,22 @@ export default function App() {
     document.title = titre ? `${titre} — INSTA-FORUM` : "INSTA-FORUM";
   }, [pageAffichee, route.menu]);
 
-  // Déjà connecté : les pages de connexion et d'inscription renvoient à l'accueil.
   useEffect(() => {
     if (currentUser && ["connexion", "inscription"].includes(route.page)) aller("/");
   }, [currentUser, route.page]);
 
-  // Inscription (POST /api/comptes/inscription/)
   const handleRegister = async (data) => {
     await inscrire(data);
     setMessageConnexion("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
     aller("/connexion");
   };
 
-  // Connexion (POST /api/comptes/connexion/)
-  // L'utilisateur reste sur la page qu'il voulait ouvrir (ex. un lien vers une question).
   const handleLogin = async (identifiants) => {
     const utilisateur = await connecter(identifiants);
     setMessageConnexion("");
     setCurrentUser(utilisateur);
   };
 
-  // Déconnexion (POST /api/comptes/deconnexion/)
   const handleLogout = async () => {
     await deconnecter().catch(() => {});
     setCurrentUser(null);
@@ -149,8 +128,6 @@ export default function App() {
     aller("/connexion");
   };
 
-  // Publier une question (POST /api/questions/), puis l'ouvrir.
-  // En cas d'erreur, le message est affiché par AskQuestionPage.
   const handleAddQuestion = async (data) => {
     const question = await publierQuestion(data);
     aller(`/questions/${question.id}`);
@@ -158,7 +135,6 @@ export default function App() {
 
   if (chargement) return null;
 
-  // ===== Mot de passe oublié (connecté ou non) =====
   if (route.page === "oubli" || route.page === "reinitialiser") {
     return (
       <MotDePassePage
@@ -168,7 +144,6 @@ export default function App() {
         onRetour={() => aller(currentUser ? "/" : "/connexion")}
         onNouvelleDemande={() => aller("/mot-de-passe-oublie")}
         onTermine={async (message) => {
-          // Le mot de passe a changé : toutes les sessions sont fermées, on se reconnecte.
           if (currentUser) {
             await deconnecter().catch(() => {});
             setCurrentUser(null);
@@ -180,7 +155,6 @@ export default function App() {
     );
   }
 
-  // ===== Pages accessibles sans être connecté =====
   if (!currentUser) {
     if (route.page === "inscription") {
       return <SignupPage onSubmit={handleRegister} onGoLogin={() => aller("/connexion")} />;
@@ -195,7 +169,6 @@ export default function App() {
     );
   }
 
-  // ===== Pages réservées aux membres connectés =====
   if (route.page === "question") {
     return (
       <QuestionPage
@@ -226,7 +199,6 @@ export default function App() {
     return <AskQuestionPage onSubmit={handleAddQuestion} onBack={() => aller(derniereVue.current)} />;
   }
 
-  // Modifier une question (PATCH /api/questions/<id>/), puis revenir dessus
   if (route.page === "modifier") {
     return (
       <AskQuestionPage
@@ -242,7 +214,6 @@ export default function App() {
     );
   }
 
-  // Accueil et ses menus
   return (
     <HomePage
       user={currentUser}

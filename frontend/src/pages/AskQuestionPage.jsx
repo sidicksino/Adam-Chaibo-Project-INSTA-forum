@@ -4,7 +4,6 @@ import "./AskQuestionPage.css";
 import { listerCategories, lireQuestion } from "../api";
 import { OutilCode } from "../TexteFormate";
 
-// Sert à poser une question, ou à la modifier quand questionId est fourni.
 export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) {
   const modification = Boolean(questionId);
   const [titre, setTitre] = useState("");
@@ -14,19 +13,15 @@ export default function AskQuestionPage({ questionId, user, onSubmit, onBack }) 
   const [categories, setCategories] = useState([]);
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
-  // En modification, le formulaire reste caché tant que la question n'est pas chargée
   const [pret, setPret] = useState(!modification);
-  // Zone de description, pour que le bouton « </> Code » insère au bon endroit
   const zoneDescription = useRef(null);
 
-  // Les catégories viennent du serveur (modifiables depuis l'administration Django)
   useEffect(() => {
     listerCategories()
       .then(setCategories)
       .catch((err) => setErreur(err.message));
   }, []);
 
-  // Modification : on pré-remplit le formulaire avec la question existante
   useEffect(() => {
     if (!questionId) return;
     lireQuestion(questionId)

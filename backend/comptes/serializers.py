@@ -10,7 +10,6 @@ from .models import Utilisateur
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
-    """Données publiques d'un utilisateur renvoyées au frontend."""
 
     prenom = serializers.CharField(source="first_name")
     nom = serializers.CharField(source="last_name")
@@ -21,7 +20,6 @@ class UtilisateurSerializer(serializers.ModelSerializer):
 
 
 class ModificationProfilSerializer(serializers.ModelSerializer):
-    """Ce qu'un membre peut changer lui-même : nom, prénom, profil et niveau."""
 
     prenom = serializers.CharField(source="first_name", max_length=150)
     nom = serializers.CharField(source="last_name", max_length=150)
@@ -32,7 +30,6 @@ class ModificationProfilSerializer(serializers.ModelSerializer):
         extra_kwargs = {"niveau": {"required": False}}
 
     def validate(self, donnees):
-        # Même règle qu'à l'inscription : niveau obligatoire pour un étudiant, vide sinon
         profil = donnees.get("profil", self.instance.profil)
         niveau = donnees.get("niveau", self.instance.niveau)
         if profil == Utilisateur.Profil.ETUDIANT:
@@ -63,7 +60,6 @@ class ChangementMotDePasseSerializer(serializers.Serializer):
 
 
 class InscriptionSerializer(serializers.ModelSerializer):
-    """Création d'un compte à partir du formulaire d'inscription."""
 
     prenom = serializers.CharField(source="first_name", max_length=150)
     nom = serializers.CharField(source="last_name", max_length=150)
@@ -72,9 +68,6 @@ class InscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Utilisateur
         fields = ["username", "email", "prenom", "nom", "profil", "niveau", "password"]
-        # Le contrôle « déjà pris » de Django est remplacé par validate_username / validate_email :
-        # leurs messages sont plus clairs et ils ignorent les majuscules.
-        # La contrainte d'unicité reste dans la base de données.
         extra_kwargs = {
             "niveau": {"required": False},
             "username": {"validators": [UnicodeUsernameValidator()]},
@@ -93,14 +86,12 @@ class InscriptionSerializer(serializers.ModelSerializer):
         return valeur
 
     def validate(self, donnees):
-        # Le niveau est obligatoire pour un étudiant, et vide pour les autres profils.
         if donnees.get("profil") == Utilisateur.Profil.ETUDIANT:
             if not donnees.get("niveau"):
                 raise serializers.ValidationError({"niveau": "Choisissez votre niveau."})
         else:
             donnees["niveau"] = ""
 
-        # Règles de sécurité de Django (longueur, mot de passe trop courant, etc.)
         utilisateur = Utilisateur(
             username=donnees.get("username"),
             email=donnees.get("email"),
@@ -114,12 +105,10 @@ class InscriptionSerializer(serializers.ModelSerializer):
         return donnees
 
     def create(self, donnees):
-        # create_user chiffre le mot de passe : il n'est jamais stocké en clair.
         return Utilisateur.objects.create_user(**donnees)
 
 
 class ConnexionSerializer(serializers.Serializer):
-    """Connexion avec le nom d'utilisateur OU l'adresse email."""
 
     identifier = serializers.CharField()
     password = serializers.CharField(write_only=True)
@@ -127,7 +116,6 @@ class ConnexionSerializer(serializers.Serializer):
     def validate(self, donnees):
         identifiant = donnees["identifier"].strip()
 
-        # Si l'utilisateur a saisi un email, on retrouve le nom d'utilisateur correspondant.
         compte = Utilisateur.objects.filter(email__iexact=identifiant).first()
         username = compte.username if compte else identifiant
 
@@ -144,7 +132,6 @@ class ConnexionSerializer(serializers.Serializer):
 
 
 class DemandeReinitialisationSerializer(serializers.Serializer):
-    """« Mot de passe oublié » : l'adresse email du compte."""
 
     email = serializers.EmailField(error_messages={
         "required": "Indiquez votre adresse email.",
@@ -154,7 +141,6 @@ class DemandeReinitialisationSerializer(serializers.Serializer):
 
 
 class ReinitialisationSerializer(serializers.Serializer):
-    """Lien reçu par email (uid + jeton) et nouveau mot de passe."""
 
     uid = serializers.CharField()
     token = serializers.CharField()
@@ -169,7 +155,6 @@ class ReinitialisationSerializer(serializers.Serializer):
         except (TypeError, ValueError, OverflowError, Utilisateur.DoesNotExist):
             raise serializers.ValidationError(self.LIEN_INVALIDE)
 
-        # Le jeton change dès que le mot de passe change : un lien ne sert qu'une fois.
         if not default_token_generator.check_token(utilisateur, donnees["token"]):
             raise serializers.ValidationError(self.LIEN_INVALIDE)
 

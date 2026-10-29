@@ -23,7 +23,6 @@ journal = logging.getLogger(__name__)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def inscription(request):
-    """POST /api/comptes/inscription/ : crée un nouveau compte."""
     serializer = InscriptionSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     utilisateur = serializer.save()
@@ -33,7 +32,6 @@ def inscription(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def connexion(request):
-    """POST /api/comptes/connexion/ : renvoie un jeton et l'utilisateur connecté."""
     serializer = ConnexionSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
     utilisateur = serializer.validated_data["utilisateur"]
@@ -44,7 +42,6 @@ def connexion(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def deconnexion(request):
-    """POST /api/comptes/deconnexion/ : supprime le jeton de l'utilisateur."""
     request.auth.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -52,10 +49,6 @@ def deconnexion(request):
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def moi(request):
-    """
-    GET   /api/comptes/moi/ : l'utilisateur correspondant au jeton
-    PATCH /api/comptes/moi/ : modifier son nom, prénom, profil ou niveau
-    """
     if request.method == "PATCH":
         serializer = ModificationProfilSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -66,10 +59,6 @@ def moi(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def changer_mot_de_passe(request):
-    """
-    POST /api/comptes/mot-de-passe/ : {"ancien": …, "nouveau": …}
-    Les autres appareils sont déconnectés ; un nouveau jeton est renvoyé pour celui-ci.
-    """
     serializer = ChangementMotDePasseSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
     utilisateur = request.user
@@ -89,10 +78,6 @@ MESSAGE_ENVOYE = (
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def mot_de_passe_oublie(request):
-    """
-    POST /api/comptes/mot-de-passe-oublie/ : envoie le lien de réinitialisation par email.
-    La réponse est la même que l'adresse existe ou non : impossible de deviner qui est inscrit.
-    """
     serializer = DemandeReinitialisationSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     utilisateur = Utilisateur.objects.filter(email__iexact=serializer.validated_data["email"], is_active=True).first()
@@ -112,7 +97,7 @@ def mot_de_passe_oublie(request):
                     "Si vous n’êtes pas à l’origine de cette demande, ignorez cet email : "
                     "votre mot de passe actuel reste valable.\n\nL’équipe INSTA-FORUM"
                 ),
-                from_email=None,  # DEFAULT_FROM_EMAIL
+                from_email=None,
                 recipient_list=[utilisateur.email],
             )
         except Exception:
@@ -128,7 +113,6 @@ def mot_de_passe_oublie(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verifier_lien(request):
-    """POST /api/comptes/reinitialiser/verifier/ : le lien reçu par email est-il encore valable ?"""
     serializer = ReinitialisationSerializer(data={k: v for k, v in request.data.items() if k != "password"})
     serializer.is_valid(raise_exception=True)
     return Response({"valide": True, "email": serializer.validated_data["utilisateur"].email})
@@ -137,7 +121,6 @@ def verifier_lien(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def reinitialiser(request):
-    """POST /api/comptes/reinitialiser/ : enregistre le nouveau mot de passe."""
     if not request.data.get("password"):
         return Response({"password": ["Choisissez un nouveau mot de passe."]}, status=status.HTTP_400_BAD_REQUEST)
     serializer = ReinitialisationSerializer(data=request.data)
@@ -146,6 +129,5 @@ def reinitialiser(request):
     utilisateur = serializer.validated_data["utilisateur"]
     utilisateur.set_password(serializer.validated_data["password"])
     utilisateur.save(update_fields=["password"])
-    # Déconnecte tous les appareils qui utilisaient l'ancien mot de passe
     Token.objects.filter(user=utilisateur).delete()
     return Response({"detail": "Mot de passe modifié. Vous pouvez maintenant vous connecter."})

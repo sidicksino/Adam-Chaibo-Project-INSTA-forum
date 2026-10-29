@@ -19,13 +19,11 @@ from .serializers import (
 
 
 def verifier_auteur(request, objet, action):
-    """Seul l'auteur d'une question ou d'une réponse peut la modifier ou la supprimer."""
     if objet.auteur_id != request.user.id:
         raise PermissionDenied(f"Seul l’auteur peut {action}.")
 
 
 def mes_votes(modele_vote, champ, utilisateur, ids):
-    """{id de la question ou réponse: 1 ou -1} pour les votes de l'utilisateur connecté."""
     if not utilisateur.is_authenticated:
         return {}
     votes = modele_vote.objects.filter(utilisateur=utilisateur, **{f"{champ}__in": ids})
@@ -33,10 +31,6 @@ def mes_votes(modele_vote, champ, utilisateur, ids):
 
 
 def enregistrer_vote(request, cible, modele_vote, champ, nom):
-    """
-    Vote pour (1) ou contre (-1) une question ou une réponse.
-    Revoter la même valeur retire le vote ; voter l'inverse le remplace.
-    """
     if cible.auteur_id == request.user.id:
         raise PermissionDenied(f"Vous ne pouvez pas voter pour votre propre {nom}.")
 
@@ -54,7 +48,6 @@ def enregistrer_vote(request, cible, modele_vote, champ, nom):
             modele_vote.objects.update_or_create(**filtre, defaults={"valeur": valeur})
             mon_vote = valeur
 
-        # Le score est recalculé à partir de tous les votes : il reste toujours exact.
         cible.votes = modele_vote.objects.filter(**{champ: cible}).aggregate(total=Sum("valeur"))["total"] or 0
         cible.save(update_fields=["votes"])
 
@@ -62,7 +55,6 @@ def enregistrer_vote(request, cible, modele_vote, champ, nom):
 
 
 class CategorieViewSet(viewsets.ReadOnlyModelViewSet):
-    """GET /api/categories/ : liste des catégories avec leur nombre de questions."""
 
     serializer_class = CategorieSerializer
     queryset = Categorie.objects.annotate(nb_questions=Count("questions")).order_by("nom")
@@ -76,33 +68,19 @@ class QuestionViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    """
-    GET    /api/questions/              : toutes les questions, les plus récentes d'abord
-    GET    /api/questions/<id>/         : une question (compte une vue par membre)
-    POST   /api/questions/              : publier une question (connexion obligatoire)
-    PATCH  /api/questions/<id>/         : modifier sa question (auteur uniquement)
-    DELETE /api/questions/<id>/         : supprimer sa question et ses réponses (auteur uniquement)
-    GET  /api/questions/<id>/reponses/  : les réponses à une question
-    POST /api/questions/<id>/reponses/  : répondre (connexion obligatoire)
-    POST /api/questions/<id>/voter/     : voter pour ou contre la question
-    POST /api/questions/<id>/favori/    : ajouter ou retirer la question des favoris
-    """
 
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    # select_related / prefetch_related : évite une requête SQL par question
     queryset = (
         Question.objects.select_related("auteur", "categorie")
         .prefetch_related("tags")
         .annotate(nb_reponses=Count("reponses"))
-        # order_by explicite : avec un annotate (Count), Django ignore le tri par défaut du modèle
         .order_by("-date_creation")
     )
 
     def get_serializer_context(self):
         contexte = super().get_serializer_context()
         utilisateur = self.request.user
-        # Une seule requête pour savoir quelles questions sont dans les favoris de l'utilisateur
         contexte["mes_favoris"] = (
             set(utilisateur.favoris.values_list("question_id", flat=True))
             if utilisateur.is_authenticated else set()
@@ -110,7 +88,6 @@ class QuestionViewSet(
         return contexte
 
     def perform_create(self, serializer):
-        # L'auteur est toujours l'utilisateur connecté, jamais une valeur envoyée par le client.
         serializer.save(auteur=self.request.user)
 
     def perform_update(self, serializer):
@@ -119,22 +96,17 @@ class QuestionViewSet(
 
     def perform_destroy(self, question):
         verifier_auteur(self.request, question, "supprimer cette question")
-        # Les réponses, votes, vues et favoris de la question sont supprimés avec elle.
         question.delete()
         Tag.objects.filter(questions__isnull=True).delete()
 
     def retrieve(self, request, *args, **kwargs):
         question = self.get_object()
         utilisateur = request.user
-        # Une vue par membre : actualiser la page ou revenir ne compte pas,
-        # et l'auteur qui relit sa propre question non plus.
         if utilisateur.is_authenticated and utilisateur.id != question.auteur_id:
             _, nouvelle = VueQuestion.objects.get_or_create(utilisateur=utilisateur, question=question)
             if nouvelle:
-                # F() fait l'addition dans la base : deux visites simultanées sont bien comptées.
                 Question.objects.filter(pk=question.pk).update(vues=F("vues") + 1)
                 question.vues += 1
-        # Ouvrir la question marque comme lues les notifications qui en parlent
         if utilisateur.is_authenticated:
             Notification.objects.filter(destinataire=utilisateur, question=question, lue=False).update(lue=True)
         contexte = {
@@ -155,7 +127,6 @@ class QuestionViewSet(
         serializer = ReponseSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         reponse = serializer.save(question=question, auteur=request.user)
-        # Prévenir l'auteur de la question (sauf s'il se répond à lui-même)
         if question.auteur_id != request.user.id:
             Notification.objects.create(
                 destinataire_id=question.auteur_id, acteur=request.user,
@@ -172,7 +143,6 @@ class QuestionViewSet(
         question = self.get_object()
         favori, cree = Favori.objects.get_or_create(utilisateur=request.user, question=question)
         if not cree:
-            # Elle était déjà en favori : un second clic la retire.
             favori.delete()
         return Response({"favori": cree})
 
@@ -180,7 +150,6 @@ class QuestionViewSet(
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def voter_reponse(request, pk):
-    """POST /api/reponses/<id>/voter/ : voter pour ou contre une réponse."""
     reponse = get_object_or_404(Reponse, pk=pk)
     return enregistrer_vote(request, reponse, VoteReponse, "reponse", "réponse")
 
@@ -188,16 +157,11 @@ def voter_reponse(request, pk):
 @api_view(["PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def reponse_detail(request, pk):
-    """
-    PATCH  /api/reponses/<id>/ : modifier sa réponse (auteur uniquement)
-    DELETE /api/reponses/<id>/ : supprimer sa réponse (auteur uniquement)
-    """
     reponse = get_object_or_404(Reponse.objects.select_related("question", "auteur"), pk=pk)
 
     if request.method == "DELETE":
         verifier_auteur(request, reponse, "supprimer cette réponse")
         with transaction.atomic():
-            # Supprimer la réponse acceptée : la question n'est plus résolue.
             if reponse.acceptee:
                 reponse.question.resolue = False
                 reponse.question.save(update_fields=["resolue"])
@@ -214,10 +178,6 @@ def reponse_detail(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def accepter_reponse(request, pk):
-    """
-    POST /api/reponses/<id>/accepter/ : l'auteur de la question choisit la bonne réponse.
-    Un second appel sur la même réponse l'annule.
-    """
     reponse = get_object_or_404(Reponse.objects.select_related("question"), pk=pk)
     question = reponse.question
 
@@ -225,16 +185,13 @@ def accepter_reponse(request, pk):
         raise PermissionDenied("Seul l’auteur de la question peut accepter une réponse.")
 
     nouvel_etat = not reponse.acceptee
-    # transaction.atomic : tout est enregistré, ou rien en cas d'erreur.
     with transaction.atomic():
-        # Une seule réponse acceptée par question
         question.reponses.update(acceptee=False)
         reponse.acceptee = nouvel_etat
         reponse.save(update_fields=["acceptee"])
         question.resolue = nouvel_etat
         question.save(update_fields=["resolue"])
 
-        # Une seule « réponse acceptée » à la fois : l'ancienne notification ne veut plus rien dire.
         Notification.objects.filter(question=question, type=Notification.Type.ACCEPTEE).delete()
         if nouvel_etat and reponse.auteur_id != request.user.id:
             Notification.objects.create(
@@ -248,7 +205,6 @@ def accepter_reponse(request, pk):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def notifications(request):
-    """GET /api/notifications/ : les 30 dernières notifications et le nombre de non lues."""
     mes_notifications = Notification.objects.filter(destinataire=request.user)
     recentes = mes_notifications.select_related("acteur", "question")[:30]
     return Response({
@@ -260,10 +216,6 @@ def notifications(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def lire_notifications(request):
-    """
-    POST /api/notifications/lire/ : marque comme lues toutes les notifications,
-    ou seulement celle indiquée avec {"id": 12}.
-    """
     a_marquer = Notification.objects.filter(destinataire=request.user, lue=False)
     if request.data.get("id") is not None:
         a_marquer = a_marquer.filter(pk=request.data["id"])
@@ -271,18 +223,14 @@ def lire_notifications(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# Barème du classement (affiché aussi sur la page « Classement »)
 POINTS_QUESTION = 2
 POINTS_REPONSE = 5
-POINTS_ACCEPTEE = 15  # en plus des points de la réponse
+POINTS_ACCEPTEE = 15
 
 
 def calculer_classement():
-    """Tous les membres qui ont participé, du plus de points au moins, avec leur rang."""
     Utilisateur = get_user_model()
 
-    # Chaque total est calculé séparément : les combiner dans une seule requête
-    # multiplierait les lignes (une jointure par question × une par réponse).
     def par_auteur(requete, calcul):
         return dict(requete.values_list("auteur").annotate(total=calcul))
 
@@ -315,7 +263,6 @@ def calculer_classement():
 
 @api_view(["GET"])
 def classement(request):
-    """GET /api/classement/ : les membres classés par points."""
     lignes = calculer_classement()
     return Response({
         "bareme": {
@@ -329,10 +276,6 @@ def classement(request):
 
 @api_view(["GET"])
 def membre(request, username):
-    """
-    GET /api/membres/<nom d'utilisateur>/ : profil public d'un membre
-    (statistiques, rang, ses questions et ses réponses). L'email n'est visible que par lui-même.
-    """
     Utilisateur = get_user_model()
     personne = get_object_or_404(Utilisateur, username=username, is_active=True)
 
@@ -377,7 +320,6 @@ def membre(request, username):
 
 @api_view(["GET"])
 def statistiques(request):
-    """GET /api/statistiques/ : chiffres affichés sur la page d'accueil."""
     Utilisateur = get_user_model()
     contributeurs = (
         Utilisateur.objects.annotate(nb_reponses=Count("reponses"))

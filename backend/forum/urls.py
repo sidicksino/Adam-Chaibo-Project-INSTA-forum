@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 
 from . import views
 
-# Le routeur crée automatiquement les adresses /questions/ et /questions/<id>/
 routeur = DefaultRouter()
 routeur.register("categories", views.CategorieViewSet, basename="categorie")
 routeur.register("questions", views.QuestionViewSet, basename="question")

@@ -1,4 +1,3 @@
-/* Couleurs du design system INSTA-FORUM (frontend/images/design-system.png) */
 .home {
   --h-blue: #1766f0;
   --h-blue-dark: #0f52cc;
@@ -31,7 +30,6 @@
   font-weight: 600;
 }
 
-/* ===== Barre du haut ===== */
 .home__nav {
   position: sticky;
   top: 0;
@@ -64,7 +62,7 @@
   gap: 12px;
   width: 100%;
   max-width: 580px;
-  min-width: 0; /* autorise la barre de recherche à rétrécir sur petit écran */
+  min-width: 0; 
   height: 46px;
   padding: 0 20px;
   border: 1px solid #dde6f3;
@@ -112,7 +110,7 @@
   background: #f1f5fc;
   color: var(--h-ink);
 }
-/* Cloche des notifications */
+
 .notifs { position: relative; }
 .notifs .home__icon-btn { position: relative; }
 .notifs__pastille {
@@ -179,7 +177,6 @@
   color: var(--h-gray);
 }
 
-/* Menu du compte */
 .compte { position: relative; }
 .compte__menu {
   position: absolute;
@@ -218,7 +215,6 @@
 }
 .compte__deconnexion:hover { background: #fdecec; }
 
-/* Message temporaire (remplace les fenêtres alert) */
 .avis {
   position: fixed;
   left: 50%;
@@ -234,7 +230,6 @@
   transform: translateX(-50%);
 }
 
-/* ===== Corps (3 colonnes) ===== */
 .home__body {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr) 360px;
@@ -245,7 +240,6 @@
   padding: 18px 24px 48px;
 }
 
-/* Menu : prend toute la hauteur, la carte « communauté » reste en bas */
 .home__menu {
   display: flex;
   flex-direction: column;
@@ -274,7 +268,6 @@
 .home__menu-item.is-active { background: var(--h-blue-soft); color: var(--h-blue); font-weight: 700; }
 .home__menu-item.is-active svg { color: var(--h-blue); }
 
-/* Carte « Une communauté étudiante et solidaire » */
 .communaute {
   position: relative;
   overflow: hidden;
@@ -293,7 +286,6 @@
 .communaute strong { position: relative; font-size: 1.0625rem; line-height: 1.4; color: var(--h-blue); }
 .communaute__texte { position: relative; font-size: 0.875rem; color: var(--h-text); }
 
-/* Bannière */
 .home__main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .home__hero {
   position: relative;
@@ -307,7 +299,7 @@
   background: linear-gradient(110deg, #1557ea 0%, #1f6af2 55%, #2c78f6 100%);
   color: #fff;
 }
-/* Arcs pointillés décoratifs derrière l'illustration */
+
 .home__hero::before,
 .home__hero::after {
   content: "";
@@ -331,7 +323,6 @@
   filter: drop-shadow(0 12px 20px rgba(8, 36, 110, 0.3));
 }
 
-/* Trois cartes de statistiques sous la bannière */
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 0; padding: 0; list-style: none; }
 .stats li {
   display: flex;
@@ -352,7 +343,6 @@
 .stats .is-violet { border-color: #e7dbfa; background: #f6f0ff; }
 .stats .is-violet .stats__icone { background: #eadcfd; color: #8b45e6; }
 
-/* Onglets */
 .home__tabs { display: flex; flex-wrap: wrap; gap: 14px; }
 .home__tabs button {
   padding: 11px 28px;
@@ -369,11 +359,10 @@
 
 .home__empty { padding: 28px; text-align: center; color: var(--h-gray); }
 
-/* ===== Carte d'une question (design « mise en avant ») ===== */
 .qcarte { display: flex; flex-direction: column; gap: 10px; padding: 20px 24px; border-radius: 16px; transition: border-color 0.15s, box-shadow 0.15s; }
 .qcarte:hover { border-color: #c9dcfa; box-shadow: 0 8px 24px rgba(15, 42, 92, 0.07); }
 .qcarte__haut { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-/* Couleur de la catégorie : texte foncé et fond très clair tirés de la même teinte */
+
 .qcarte__categorie {
   display: inline-flex;
   align-items: center;
@@ -386,7 +375,7 @@
   font-weight: 700;
 }
 .qcarte__titre { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; line-height: 1.35; color: var(--h-ink); }
-/* Le titre est un bouton (accessible au clavier) qui garde l'apparence d'un titre */
+
 .qcarte__titre button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; }
 .qcarte__titre button:hover { color: var(--h-blue); }
 .qcarte__extrait {
@@ -440,12 +429,10 @@
 .question__meta svg { color: var(--h-gray); }
 .question__author { color: var(--h-ink); font-weight: 700; }
 
-/* Lien vers le profil d'un membre (noms d'auteurs dans tout le site) */
 .lien-membre { color: inherit; text-decoration: none; }
 .lien-membre:hover strong,
 a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: underline; }
 
-/* Étoile « favori » en haut à droite de la carte */
 .etoile {
   display: flex;
   flex: none;
@@ -458,11 +445,9 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
 .etoile:hover { background: #fff7e6; color: #f59e0b; }
 .etoile.is-active { color: #f59e0b; }
 
-/* En-tête des menus autres que l'accueil */
 .home__entete h1 { margin: 0 0 6px; font-size: 1.625rem; color: var(--h-ink); }
 .home__entete p { margin: 0; font-size: 0.9375rem; color: var(--h-gray); }
 
-/* Filtre par catégorie */
 .home__filtres { display: flex; flex-wrap: wrap; gap: 8px; }
 .home__filtres button {
   display: flex;
@@ -482,7 +467,6 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
 
 .home__empty-action { margin: 16px auto 0; }
 
-/* Grille des catégories */
 .cats-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
 .cats-grille__carte {
   display: flex;
@@ -498,7 +482,6 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
 .cats-grille__carte strong { font-size: 1.0625rem; color: var(--h-ink); }
 .cats-grille__carte span { font-size: 0.875rem; color: var(--h-gray); }
 
-/* Classement */
 .classement { padding: 8px 0; }
 .classement__bareme { margin: 12px 20px; font-size: 0.8125rem; color: var(--h-gray); }
 .classement__defilement { overflow-x: auto; }
@@ -519,7 +502,6 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
 .classement__rang { width: 48px; font-weight: 600; }
 .classement__membre { display: flex; align-items: center; gap: 10px; font-weight: 500; color: var(--h-ink); white-space: nowrap; }
 
-/* Colonne droite */
 .home__side { display: flex; flex-direction: column; gap: 22px; }
 .home__side .card { padding: 26px 22px; }
 .home__side h3 { margin: 0 0 20px; font-size: 1.25rem; font-weight: 700; color: var(--h-ink); }
@@ -562,7 +544,6 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
 .tip h3 { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; color: var(--h-blue); font-size: 1.125rem; }
 .tip p { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--h-text); }
 
-/* ===== Responsive ===== */
 @media (max-width: 1280px) {
   .home__body { grid-template-columns: 230px minmax(0, 1fr) 300px; }
   .home__hero { padding-right: 230px; }
@@ -585,7 +566,7 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
   .home__actions { gap: 10px; }
   .home__ask { padding: 0 12px; }
   .home__icon-btn { width: 42px; height: 42px; }
-  /* Sur téléphone, la liste occupe toute la largeur sous la barre du haut */
+
   .notifs__menu { position: fixed; top: 76px; left: 16px; right: 16px; width: auto; }
   .home__body { grid-template-columns: 1fr; padding: 16px 16px 40px; gap: 18px; }
   .home__menu { flex-direction: row; overflow-x: auto; position: static; min-height: 0; padding: 8px; }
@@ -597,7 +578,7 @@ a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: u
   .home__hero p { font-size: 0.875rem; }
   .home__hero-image { right: 14px; height: 96px; }
   .home__hero::before, .home__hero::after { display: none; }
-  /* Statistiques côte à côte en version compacte */
+
   .stats { gap: 8px; }
   .stats li { flex-direction: column; gap: 6px; padding: 12px 6px; text-align: center; }
   .stats__icone { width: 38px; height: 38px; }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import "./HomePage.css";      // styles communs (barre du haut, cartes, tags, avatars)
-import "./QuestionPage.css";  // styles propres à cette page
+import "./HomePage.css";
+import "./QuestionPage.css";
 import {
   accepterReponse, basculerFavori, listerReponses, lireQuestion, modifierReponse, publierReponse,
   supprimerQuestion, supprimerReponse, voterQuestion, voterReponse,
@@ -30,8 +30,6 @@ const Fleche = ({ bas }) => (
   </svg>
 );
 
-/* ---------- Colonne de vote : ▲ score ▼ ---------- */
-// « nom » sert aux messages : « question » ou « réponse »
 function Votes({ score, monVote, estAMoi, nom, onVoter }) {
   const titre = (texte) => (estAMoi ? `Vous ne pouvez pas voter pour votre propre ${nom}` : texte);
   return (
@@ -51,7 +49,6 @@ function Votes({ score, monVote, estAMoi, nom, onVoter }) {
   );
 }
 
-// « • modifiée » ; la date exacte s'affiche au survol
 const Modifiee = ({ date }) =>
   date ? (
     <>
@@ -60,7 +57,6 @@ const Modifiee = ({ date }) =>
     </>
   ) : null;
 
-/* ---------- Page de détail d'une question ---------- */
 export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLogout }) {
   const [question, setQuestion] = useState(null);
   const [reponses, setReponses] = useState([]);
@@ -69,9 +65,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
   const [erreurReponse, setErreurReponse] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const [avis, afficherAvis] = useAvis();
-  // Réponse en cours de modification : { id, texte, erreur, envoi } ou null
   const [edition, setEdition] = useState(null);
-  // Zones de texte, pour que le bouton « </> Code » insère au bon endroit
   const zoneReponse = useRef(null);
   const zoneEdition = useRef(null);
 
@@ -109,7 +103,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
     setEdition((ed) => ({ ...ed, envoi: true, erreur: "" }));
     try {
       const modifiee = await modifierReponse(edition.id, edition.texte.trim());
-      // On garde notre vote, que le serveur ne renvoie pas ici
       setReponses((liste) => liste.map((r) => (r.id === modifiee.id ? { ...r, ...modifiee, mon_vote: r.mon_vote } : r)));
       setEdition(null);
     } catch (err) {
@@ -122,7 +115,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
     try {
       await supprimerReponse(reponse.id);
       setReponses((liste) => liste.filter((r) => r.id !== reponse.id));
-      // Supprimer la réponse acceptée remet la question « non résolue » (comme sur le serveur)
       setQuestion((q) => ({ ...q, reponses: q.reponses - 1, resolue: reponse.acceptee ? false : q.resolue }));
       afficherAvis("Votre réponse a été supprimée.");
     } catch (err) {
@@ -155,7 +147,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
   const handleAccepter = async (reponse) => {
     try {
       const modifiee = await accepterReponse(reponse.id);
-      // La liste est rechargée car l'ordre change (réponse acceptée en premier)
       setReponses(await listerReponses(id));
       setQuestion((q) => ({ ...q, resolue: modifiee.acceptee }));
     } catch (err) {
@@ -163,7 +154,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
     }
   };
 
-  // Le serveur renvoie le nouveau score et notre vote : on met à jour sans recharger la page.
   const handleVoterQuestion = async (valeur) => {
     try {
       const { votes, mon_vote } = await voterQuestion(id, valeur);
@@ -185,7 +175,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
   const handleVoterReponse = async (reponse, valeur) => {
     try {
       const { votes, mon_vote } = await voterReponse(reponse.id, valeur);
-      // L'ordre n'est pas modifié tout de suite pour que la réponse ne « saute » pas sous la souris.
       setReponses((liste) => liste.map((r) => (r.id === reponse.id ? { ...r, votes, mon_vote } : r)));
     } catch (err) {
       afficherAvis(err.message);
@@ -194,7 +183,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
 
   return (
     <div className="home">
-      {/* ===== Barre du haut ===== */}
       <header className="home__nav">
         <a className="home__logo" href="#/">
           <GradCap />
@@ -217,7 +205,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
 
         {question && (
           <>
-            {/* ===== La question ===== */}
             <article className="card detail__question detail__ligne">
               <Votes score={question.votes} monVote={question.mon_vote} estAMoi={estAuteur}
                 nom="question" onVoter={handleVoterQuestion} />
@@ -250,7 +237,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                 {question.tags.map((t) => <span key={t} className="tag">{t}</span>)}
               </div>
 
-              {/* Modifier / supprimer : réservé à l'auteur */}
               {estAuteur && (
                 <div className="detail__outils">
                   <button type="button" onClick={onEdit}>Modifier</button>
@@ -260,7 +246,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
               </div>
             </article>
 
-            {/* ===== Les réponses ===== */}
             <h2 className="detail__titre-reponses">{pluriel(reponses.length, "réponse")}</h2>
 
             {reponses.length === 0 && (
@@ -277,7 +262,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                 {r.acceptee && <span className="detail__badge">✓ Réponse acceptée</span>}
 
                 {edition?.id === r.id ? (
-                  /* Modification de sa propre réponse, directement dans la page */
                   <form className="detail__edition" onSubmit={handleEnregistrerReponse} noValidate>
                     <textarea rows="5" value={edition.texte} aria-label="Modifier votre réponse" autoFocus
                       ref={zoneEdition}
@@ -315,7 +299,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                         </button>
                       </>
                     )}
-                    {/* Seul l'auteur de la question peut choisir la bonne réponse */}
                     {estAuteur && (
                       <button type="button" className="detail__accepter" onClick={() => handleAccepter(r)}>
                         {r.acceptee ? "Retirer l’acceptation" : "Accepter cette réponse"}
@@ -327,7 +310,6 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
               </article>
             ))}
 
-            {/* ===== Formulaire de réponse ===== */}
             <form className="card detail__formulaire" onSubmit={handleRepondre} noValidate>
               <h2>Votre réponse</h2>
               <textarea

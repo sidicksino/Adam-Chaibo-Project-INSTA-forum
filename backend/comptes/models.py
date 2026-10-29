@@ -3,7 +3,6 @@ from django.db import models
 
 
 class Utilisateur(AbstractUser):
-    """Utilisateur du forum : étudiant, enseignant ou personnel de l'INSTA."""
 
     class Profil(models.TextChoices):
         ETUDIANT = "etudiant", "Étudiant"
@@ -17,10 +16,8 @@ class Utilisateur(AbstractUser):
         M1 = "M1", "Master 1"
         M2 = "M2", "Master 2"
 
-    # L'email sert aussi d'identifiant de connexion : il doit être unique.
     email = models.EmailField("adresse email", unique=True)
     profil = models.CharField("profil", max_length=20, choices=Profil.choices)
-    # Le niveau ne concerne que les étudiants.
     niveau = models.CharField("niveau", max_length=2, choices=Niveau.choices, blank=True)
 
     class Meta:

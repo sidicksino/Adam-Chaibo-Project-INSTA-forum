@@ -1,7 +1,6 @@
 import { useState } from "react";
 import "./LoginPage.css";
 
-/* ---------- Icônes (SVG inline, aucune dépendance) ---------- */
 const Icon = ({ children, size = 22, ...props }) => (
   <svg
     width={size}
@@ -66,7 +65,6 @@ const GradCap = () => (
   </svg>
 );
 
-/* ---------- Page de connexion ---------- */
 export default function LoginPage({ message, onLogin, onSignup, onForgotPassword }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -86,7 +84,6 @@ export default function LoginPage({ message, onLogin, onSignup, onForgotPassword
 
     try {
       setLoading(true);
-      // À brancher sur votre API (ex. POST /api/auth/login)
       await onLogin?.({ identifier: identifier.trim(), password, remember });
     } catch (err) {
       setError(err?.message || "Identifiants incorrects. Réessayez.");
@@ -97,7 +94,6 @@ export default function LoginPage({ message, onLogin, onSignup, onForgotPassword
 
   return (
     <main className="login">
-      {/* ===== Panneau gauche ===== */}
       <section className="login__brand">
         <div className="login__brand-top">
           <GradCap />
@@ -126,7 +122,6 @@ export default function LoginPage({ message, onLogin, onSignup, onForgotPassword
         </div>
       </section>
 
-      {/* ===== Panneau droit ===== */}
       <section className="login__panel">
         <form className="login__form" onSubmit={handleSubmit} noValidate>
           <h2>Se connecter</h2>
@@ -184,7 +179,6 @@ export default function LoginPage({ message, onLogin, onSignup, onForgotPassword
             </button>
           </div>
 
-          {/* Message de réussite, par exemple après la création du compte */}
           {message && !error && (
             <p className="login__succes" role="status">
               {message}

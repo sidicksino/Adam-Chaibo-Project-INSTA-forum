@@ -1,14 +1,3 @@
-"""
-Remplit la base avec des données de démonstration réalistes.
-
-    python manage.py peupler              ajoute les membres, questions, réponses, votes…
-    python manage.py peupler --supprimer  retire toutes les données de démonstration
-
-Les comptes de démonstration ont une adresse en @insta-forum.example (domaine réservé
-aux exemples : aucun email ne peut partir vers une vraie personne). Les vrais comptes
-ne sont jamais modifiés.
-"""
-
 import random
 from datetime import timedelta
 
@@ -25,7 +14,6 @@ from forum.models import (
 DOMAINE = "insta-forum.example"
 MOT_DE_PASSE = "Forum-Insta-2026"
 
-# (identifiant, prénom, nom, profil, niveau)
 MEMBRES = [
     ("mahamat.abakar", "Mahamat", "Abakar", "etudiant", "L3"),
     ("fatime.zakaria", "Fatimé", "Zakaria", "etudiant", "L2"),
@@ -39,8 +27,6 @@ MEMBRES = [
     ("idriss.ali", "Idriss", "Ali", "personnel", ""),
 ]
 
-# Chaque question : auteur, catégorie, tags, il y a combien de jours, titre, description,
-# puis ses réponses : (auteur, contenu, acceptée ?)
 QUESTIONS = [
     {
         "auteur": "ousmane.djibrine", "categorie": "Programmation", "tags": ["Python", "Boucles"], "jours": 19,
@@ -278,7 +264,6 @@ class Command(BaseCommand):
         demo = Utilisateur.objects.filter(email__endswith=f"@{DOMAINE}")
 
         if options["supprimer"]:
-            # Supprimer les membres supprime aussi leurs questions, réponses, votes… (CASCADE)
             nombre = demo.count()
             demo.delete()
             Tag.objects.filter(questions__isnull=True).delete()
@@ -297,7 +282,7 @@ class Command(BaseCommand):
             self._peupler()
 
     def _peupler(self):
-        hasard = random.Random(2026)  # toujours le même résultat d'une exécution à l'autre
+        hasard = random.Random(2026)
         maintenant = timezone.now()
 
         membres = {}
@@ -306,7 +291,6 @@ class Command(BaseCommand):
                 username=identifiant, email=f"{identifiant}@{DOMAINE}", password=MOT_DE_PASSE,
                 first_name=prenom, last_name=nom, profil=profil, niveau=niveau,
             )
-            # Inscriptions étalées sur le mois précédent
             Utilisateur.objects.filter(pk=membre.pk).update(date_joined=maintenant - timedelta(days=hasard.randint(25, 40)))
             membres[identifiant] = membre
 
@@ -328,19 +312,15 @@ class Command(BaseCommand):
 
             autres = [m for m in membres.values() if m != auteur]
 
-            # Vues : une partie des membres a ouvert la question
             lecteurs = hasard.sample(autres, k=hasard.randint(3, len(autres)))
             VueQuestion.objects.bulk_create(VueQuestion(utilisateur=m, question=question) for m in lecteurs)
 
-            # Votes sur la question (quelques-uns de ceux qui l'ont lue)
             for votant in hasard.sample(lecteurs, k=hasard.randint(0, len(lecteurs) // 2)):
                 VoteQuestion.objects.create(utilisateur=votant, question=question, valeur=1)
 
-            # Favoris
             for membre in hasard.sample(lecteurs, k=hasard.randint(0, 2)):
                 Favori.objects.create(utilisateur=membre, question=question)
 
-            # Réponses, quelques heures après la question
             date_reponse = date_question
             resolue = False
             for identifiant, contenu, acceptee in donnees["reponses"]:
@@ -350,12 +330,10 @@ class Command(BaseCommand):
                 Reponse.objects.filter(pk=reponse.pk).update(date_creation=date_reponse)
                 nb_reponses += 1
 
-                # Votes : la réponse acceptée est la plus appréciée
                 votants = [m for m in lecteurs if m != repondant]
                 for votant in hasard.sample(votants, k=min(len(votants), hasard.randint(3, 6) if acceptee else hasard.randint(0, 3))):
                     VoteReponse.objects.create(utilisateur=votant, reponse=reponse, valeur=1)
 
-                # Notifications, comme dans l'application ; les plus anciennes sont lues
                 lue = donnees["jours"] > 3
                 notification = Notification.objects.create(
                     destinataire=auteur, acteur=repondant, type=Notification.Type.REPONSE,
@@ -381,7 +359,6 @@ class Command(BaseCommand):
 
     @staticmethod
     def _recalculer_scores():
-        """Le score affiché de chaque question et réponse = la somme de ses votes."""
         for question in Question.objects.all():
             total = question.liste_votes.aggregate(t=Sum("valeur"))["t"] or 0
             Question.objects.filter(pk=question.pk).update(votes=total)

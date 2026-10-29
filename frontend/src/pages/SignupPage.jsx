@@ -1,9 +1,8 @@
 import { useState } from "react";
-import "./LoginPage.css";   // styles communs (panneau gauche, boutons, champs)
-import "./SignupPage.css";  // styles propres à l'inscription
+import "./LoginPage.css";
+import "./SignupPage.css";
 import { Solidite } from "../commun";
 
-/* ---------- Icônes ---------- */
 const Icon = ({ children, size = 22, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
@@ -73,7 +72,6 @@ const GradCap = () => (
   </svg>
 );
 
-/* ---------- Champ réutilisable ---------- */
 function Field({ icon, error, right, children }) {
   return (
     <div className="field-wrap">
@@ -87,7 +85,6 @@ function Field({ icon, error, right, children }) {
   );
 }
 
-/* ---------- Validation ---------- */
 const initial = {
   prenom: "", nom: "", username: "", email: "",
   profil: "", niveau: "", password: "", confirm: "", terms: false,
@@ -107,7 +104,6 @@ function validate(v) {
   return e;
 }
 
-/* ---------- Page de création de compte ---------- */
 export default function SignupPage({ onSubmit, onGoLogin }) {
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState({});
@@ -138,7 +134,6 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
       const { confirm, terms, ...payload } = values;
       await onSubmit?.(payload);
     } catch (err) {
-      // Les erreurs qui concernent un champ s'affichent sous ce champ, les autres en bas du formulaire
       const parChamp = {};
       const autres = [];
       Object.entries(err?.champs ?? {}).forEach(([champ, messages]) => {
@@ -159,7 +154,6 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
 
   return (
     <main className="login">
-      {/* ===== Panneau gauche ===== */}
       <section className="login__brand">
         <div className="login__brand-top">
           <GradCap />
@@ -185,7 +179,6 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
         </div>
       </section>
 
-      {/* ===== Panneau droit ===== */}
       <section className="login__panel">
         <form className="login__form login__form--signup" onSubmit={handleSubmit} noValidate>
           <h2>Créer un compte</h2>
@@ -266,7 +259,6 @@ export default function SignupPage({ onSubmit, onGoLogin }) {
             <label className="check check--top">
               <input type="checkbox" checked={values.terms} onChange={set("terms")} />
               <span>
-                {/* À transformer en liens quand ces pages existeront */}
                 J’accepte les <strong>conditions d’utilisation</strong> et la{" "}
                 <strong>politique de confidentialité</strong> du forum.
               </span>

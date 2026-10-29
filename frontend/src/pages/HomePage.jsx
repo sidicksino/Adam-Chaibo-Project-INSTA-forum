@@ -4,8 +4,6 @@ import { basculerFavori, listerCategories, listerQuestions, lireClassement, lire
 import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
 import { sansMiseEnForme } from "../TexteFormate";
 
-
-/* ---------- Icônes ---------- */
 const Icon = ({ children, size = 20, ...p }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...p}>
@@ -32,7 +30,6 @@ const I = {
   ),
 };
 
-/* Icônes du menu : contour au repos, pleine quand le menu est actif (comme dans le design) */
 const ICONES_MENU = {
   "Accueil": [
     <Icon key="c" size={24}><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" /></Icon>,
@@ -60,7 +57,6 @@ const ICONES_MENU = {
   ],
 };
 
-/* Icônes des cartes de statistiques */
 const IconeQuestions = () => (
   <Icon size={26} stroke="none" fill="currentColor"><circle cx="12" cy="7.5" r="4.5" /><path d="M3.5 21c0-4.4 3.8-7.5 8.5-7.5s8.5 3.1 8.5 7.5z" /></Icon>
 );
@@ -85,7 +81,6 @@ const GradCap = () => (
   </svg>
 );
 
-/* ---------- Carte d'une question (design « mise en avant ») ---------- */
 const ICONES_CATEGORIE = {
   "Programmation": <path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14" />,
   "Réseaux": <><circle cx="12" cy="5" r="2.5" /><circle cx="5" cy="19" r="2.5" /><circle cx="19" cy="19" r="2.5" /><path d="M12 7.5v4M12 11.5l-5.5 5.5M12 11.5l5.5 5.5" /></>,
@@ -97,7 +92,6 @@ const IconeCategorie = ({ nom }) => (
   <Icon size={16}>{ICONES_CATEGORIE[nom] ?? <path d="M3 6a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />}</Icon>
 );
 
-// Badge des réponses : orange s'il n'y en a aucune, vert si la question est résolue
 function BadgeReponses({ nombre, resolue }) {
   const texte = `${nombre} réponse${nombre > 1 ? "s" : ""}`;
   if (resolue) return <span className="qcarte__compteur is-resolue">{I.check}Résolue · {texte}</span>;
@@ -113,7 +107,6 @@ function CarteQuestion({ q, onOuvrir, onFavori }) {
   return (
     <article className="card qcarte">
       <div className="qcarte__haut">
-        {/* La catégorie prend sa couleur (définie dans l'administration) */}
         <span className="qcarte__categorie" style={{ "--couleur-categorie": q.categorieCouleur }}>
           <IconeCategorie nom={q.categorie} />{q.categorie}
         </span>
@@ -150,7 +143,6 @@ function CarteQuestion({ q, onOuvrir, onFavori }) {
   );
 }
 
-/* Carte du bas du menu : groupe de personnes sur des vagues bleues */
 const CarteCommunaute = () => (
   <div className="communaute">
     <span className="communaute__icone">
@@ -181,11 +173,9 @@ const CarteCommunaute = () => (
   </div>
 );
 
-/* ---------- Mise en forme des données reçues de l'API ---------- */
 const extrait = (texte, max = 180) =>
   texte.length > max ? `${texte.slice(0, max).trimEnd()}…` : texte;
 
-// Convertit une question de l'API au format attendu par l'affichage
 const versCarte = (q) => ({
   id: q.id,
   votes: q.votes,
@@ -209,7 +199,6 @@ const versCarte = (q) => ({
 const MENU = ["Accueil", "Questions", "Catégories", "Mes questions", "Favoris", "Classement"];
 const TABS = ["Récents", "Populaires", "Sans réponse", "Résolues"];
 
-// Menus qui affichent une liste de questions (les autres ont leur propre affichage)
 const VUES_LISTE = ["Accueil", "Questions", "Mes questions", "Favoris"];
 
 const ENTETES = {
@@ -220,11 +209,8 @@ const ENTETES = {
   "Classement": ["Classement", "Les membres qui aident le plus la communauté."],
 };
 
-/* ---------- Page d'accueil ---------- */
-// vue = { menu, categorie } : gardée par App pour la retrouver au retour d'une question
 export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuestion, onOpenQuestion }) {
   const { menu, categorie: categorieFiltre } = vue;
-  // « Sidick Abdoulaye » dans la bannière, comme dans le design
   const nomComplet = `${user?.prenom ?? ""} ${user?.nom ?? ""}`.trim();
   const [tab, setTab] = useState("Récents");
   const [query, setQuery] = useState("");
@@ -237,7 +223,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
   const [erreurClassement, setErreurClassement] = useState("");
   const [avis, afficherAvis] = useAvis();
 
-  // Chargement des questions, catégories et statistiques depuis Django
   const charger = () => {
     setChargement(true);
     setErreur("");
@@ -253,19 +238,16 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
 
   useEffect(charger, []);
 
-  // Le classement n'est chargé que lorsqu'on ouvre ce menu
   useEffect(() => {
     if (menu === "Classement" && !classement && !erreurClassement) {
       lireClassement().then(setClassement).catch((err) => setErreurClassement(err.message));
     }
   }, [menu, classement, erreurClassement]);
 
-  // Changer de menu (y compris avec le bouton Retour du navigateur) remet l'onglet « Récents »
   useEffect(() => setTab("Récents"), [menu, categorieFiltre]);
 
   const changerMenu = (nouveau, categorie = null) => onChangerVue({ menu: nouveau, categorie });
 
-  // Une recherche depuis « Catégories » ou « Classement » bascule vers la liste des questions
   const rechercher = (texte) => {
     setQuery(texte);
     if (texte && !VUES_LISTE.includes(menu)) changerMenu("Questions");
@@ -289,7 +271,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
     if (tab === "Populaires") items.sort((a, b) => b.votes - a.votes);
     if (tab === "Sans réponse") items = items.filter((q) => q.answers === 0);
     if (tab === "Résolues") items = items.filter((q) => q.solved);
-    // La recherche porte sur le titre, la description, les tags et l'auteur
     const s = query.trim().toLowerCase();
     if (s) {
       items = items.filter((q) =>
@@ -299,7 +280,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
     return items;
   }, [questions, menu, categorieFiltre, user, tab, query]);
 
-  // Message adapté quand la liste est vide
   const messageVide = () => {
     if (query.trim() || tab !== "Récents") return "Aucune question ne correspond. Essayez un autre filtre ou une autre recherche.";
     if (menu === "Mes questions") return "Vous n’avez pas encore posé de question.";
@@ -312,7 +292,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
 
   return (
     <div className="home">
-      {/* ===== Barre du haut ===== */}
       <header className="home__nav">
         <a className="home__logo" href="#/">
           <GradCap />
@@ -327,7 +306,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
 
         <div className="home__actions">
           <button className="home__ask" onClick={onAskQuestion} aria-label="Poser une question">
-            {/* Le texte est masqué sur téléphone (voir HomePage.css) : seul le « + » reste */}
             {I.plus} <span>Poser une question</span>
           </button>
           <Cloche />
@@ -336,7 +314,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
       </header>
 
       <div className="home__body">
-        {/* ===== Menu gauche ===== */}
         <aside className="card home__menu" aria-label="Navigation">
           {MENU.map((label) => (
             <button key={label}
@@ -349,14 +326,12 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
           <CarteCommunaute />
         </aside>
 
-        {/* ===== Fil principal ===== */}
         <main className="home__main">
           {menu === "Accueil" ? (
             <>
               <section className="home__hero">
                 <h1>Bienvenue{nomComplet ? `, ${nomComplet}` : ""} sur INSTA-FORUM</h1>
                 <p>Posez vos questions, partagez vos connaissances et progressez ensemble.</p>
-                {/* Illustration générée avec Google Flow (fond détouré) */}
                 <img className="home__hero-image" src="/images/banniere-idees.webp" alt="" />
               </section>
 
@@ -382,7 +357,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             </section>
           )}
 
-          {/* Filtre par catégorie (menu « Questions ») */}
           {menu === "Questions" && (
             <div className="home__filtres" aria-label="Filtrer par catégorie">
               <button className={!categorieFiltre ? "is-active" : ""} onClick={() => changerMenu("Questions")}>
@@ -404,7 +378,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             </div>
           )}
 
-          {/* ===== Listes de questions ===== */}
           {VUES_LISTE.includes(menu) && (
             <>
               <div className="home__tabs" role="tablist">
@@ -436,7 +409,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             </>
           )}
 
-          {/* ===== Catégories ===== */}
           {menu === "Catégories" && (
             <div className="cats-grille">
               {categories.map((c) => (
@@ -449,7 +421,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             </div>
           )}
 
-          {/* ===== Classement ===== */}
           {menu === "Classement" && (
             <section className="card classement">
               {!classement && !erreurClassement && <p className="home__empty">Chargement du classement…</p>}
@@ -504,7 +475,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
           )}
         </main>
 
-        {/* ===== Colonne droite ===== */}
         <aside className="home__side">
           <section className="card">
             <h3>Catégories</h3>
@@ -520,7 +490,6 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
             </ul>
           </section>
 
-          {/* Classement par nombre de réponses publiées */}
           {stats.contributeurs.length > 0 && (
             <section className="card">
               <h3>Meilleurs contributeurs</h3>

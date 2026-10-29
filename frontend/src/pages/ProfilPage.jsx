@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import "./HomePage.css";    // styles communs (barre du haut, cartes, onglets, avatars)
-import "./QuestionPage.css"; // bouton « Retour » et messages d'erreur (.detail__retour, .detail__erreur)
-import "./SignupPage.css";  // indicateur de solidité du mot de passe (.solidite)
-import "./ProfilPage.css";  // styles propres à cette page
+import "./HomePage.css";
+import "./QuestionPage.css";
+import "./SignupPage.css";
+import "./ProfilPage.css";
 import { changerMotDePasse, lireMembre, modifierMonProfil } from "../api";
 import { Avatar, Cloche, MenuCompte, Solidite, couleurPour, ilYA, pluriel } from "../commun";
 
@@ -17,10 +17,8 @@ const GradCap = () => (
 const PROFILS = { etudiant: "Étudiant", enseignant: "Enseignant", personnel: "Personnel" };
 const NIVEAUX = { L1: "Licence 1", L2: "Licence 2", L3: "Licence 3", M1: "Master 1", M2: "Master 2" };
 
-// « octobre 2026 »
 const moisAnnee = (date) => new Date(date).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
-/* ---------- Onglet « Paramètres » (uniquement sur son propre profil) ---------- */
 function Parametres({ user, onUserUpdate }) {
   const [infos, setInfos] = useState({
     prenom: user.prenom, nom: user.nom, profil: user.profil, niveau: user.niveau || "",
@@ -136,7 +134,6 @@ function Parametres({ user, onUserUpdate }) {
   );
 }
 
-/* ---------- Page de profil d'un membre ---------- */
 export default function ProfilPage({ username, user, onUserUpdate, onBack, onLogout }) {
   const [membre, setMembre] = useState(null);
   const [erreur, setErreur] = useState("");
@@ -150,13 +147,11 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
     lireMembre(username)
       .then((m) => {
         setMembre(m);
-        // Un membre qui répond sans poser de questions (souvent un enseignant) : on ouvre ses réponses
         if (m.questions.length === 0 && m.reponses.length > 0) setOnglet("reponses");
       })
       .catch((err) => setErreur(err.statut === 404 ? "Ce membre n’existe pas." : err.message));
   }, [username]);
 
-  // Après « Mes informations », le nom affiché en haut du profil suit
   const mettreAJour = (misAJour) => {
     onUserUpdate(misAJour);
     setMembre((m) => ({ ...m, prenom: misAJour.prenom, nom: misAJour.nom, profil: misAJour.profil, niveau: misAJour.niveau }));
@@ -167,7 +162,6 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
 
   return (
     <div className="home">
-      {/* ===== Barre du haut ===== */}
       <header className="home__nav">
         <a className="home__logo" href="#/">
           <GradCap />
@@ -191,7 +185,6 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
 
         {membre && (
           <>
-            {/* ===== Identité ===== */}
             <section className="card profil__entete">
               <Avatar name={nomComplet} color={couleurPour(membre.username)} size={88} />
               <div className="profil__identite">
@@ -217,7 +210,6 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
               </div>
             </section>
 
-            {/* ===== Statistiques ===== */}
             <ul className="profil__stats">
               <li><strong>{stats.questions}</strong>question{stats.questions > 1 ? "s" : ""}</li>
               <li><strong>{stats.reponses}</strong>réponse{stats.reponses > 1 ? "s" : ""}</li>
@@ -225,7 +217,6 @@ export default function ProfilPage({ username, user, onUserUpdate, onBack, onLog
               <li><strong>{stats.votes_recus}</strong>vote{Math.abs(stats.votes_recus) > 1 ? "s" : ""} reçu{Math.abs(stats.votes_recus) > 1 ? "s" : ""}</li>
             </ul>
 
-            {/* ===== Onglets ===== */}
             <div className="home__tabs" role="tablist">
               <button role="tab" aria-selected={onglet === "questions"} className={onglet === "questions" ? "is-active" : ""}
                 onClick={() => setOnglet("questions")}>Questions ({membre.questions.length})</button>

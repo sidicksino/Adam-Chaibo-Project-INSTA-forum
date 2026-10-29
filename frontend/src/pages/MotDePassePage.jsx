@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import "./LoginPage.css";  // même mise en page que la connexion (panneau bleu à gauche)
-import "./SignupPage.css"; // lien « Retour à la connexion » (.signup__switch)
+import "./LoginPage.css";
+import "./SignupPage.css";
 import { demanderReinitialisation, reinitialiserMotDePasse, verifierLien } from "../api";
 
-/* ---------- Icônes ---------- */
 const Icon = ({ children, size = 22 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -28,7 +27,6 @@ const GradCap = () => (
   </svg>
 );
 
-/* Panneau bleu de gauche, identique à la page de connexion */
 const PanneauMarque = () => (
   <section className="login__brand">
     <div className="login__brand-top">
@@ -52,7 +50,6 @@ const PanneauMarque = () => (
   </section>
 );
 
-/* ---------- 1. « Mot de passe oublié » : demander le lien par email ---------- */
 function Demande({ onRetour }) {
   const [email, setEmail] = useState("");
   const [erreur, setErreur] = useState("");
@@ -112,9 +109,7 @@ function Demande({ onRetour }) {
   );
 }
 
-/* ---------- 2. Lien reçu par email : choisir le nouveau mot de passe ---------- */
 function NouveauMotDePasse({ uid, token, onTermine, onNouvelleDemande }) {
-  // null = vérification en cours, false = lien invalide, sinon l'email du compte
   const [compte, setCompte] = useState(null);
   const [erreurLien, setErreurLien] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
@@ -200,7 +195,6 @@ function NouveauMotDePasse({ uid, token, onTermine, onNouvelleDemande }) {
   );
 }
 
-/* uid + token fournis : page « nouveau mot de passe » ; sinon page « mot de passe oublié » */
 export default function MotDePassePage({ uid, token, onRetour, onTermine, onNouvelleDemande }) {
   return (
     <main className="login">

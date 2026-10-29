@@ -1,10 +1,3 @@
-"""
-Tests des règles du forum : questions, vues, votes, réponse acceptée, modification,
-suppression, favoris, notifications, classement et données de démonstration.
-Lancer :  python manage.py test
-(Django crée une base de données temporaire : vos vraies données ne sont jamais touchées.)
-"""
-
 from io import StringIO
 
 from django.core.management import call_command
@@ -18,13 +11,12 @@ from .models import Categorie, Notification, Question, Reponse, Tag
 
 
 class BaseForum(APITestCase):
-    """Trois membres prêts à l'emploi (awa pose les questions) et des raccourcis."""
 
     def setUp(self):
         self.awa = self.membre("awa")
         self.ali = self.membre("ali")
         self.moussa = self.membre("moussa")
-        self.categorie = Categorie.objects.get(nom="Programmation")  # créée par la migration
+        self.categorie = Categorie.objects.get(nom="Programmation")
 
     @staticmethod
     def membre(nom):
@@ -35,7 +27,6 @@ class BaseForum(APITestCase):
 
     @staticmethod
     def client_de(utilisateur=None):
-        """Client HTTP connecté en tant que cet utilisateur (ou anonyme)."""
         client = APIClient()
         if utilisateur:
             client.credentials(HTTP_AUTHORIZATION=f"Token {Token.objects.get_or_create(user=utilisateur)[0].key}")
@@ -73,14 +64,14 @@ class QuestionsTests(BaseForum):
     def test_plus_recentes_en_premier(self):
         ancienne, recente = self.poser(), self.poser()
         Question.objects.filter(pk=ancienne).update(date_creation=Question.objects.get(pk=recente).date_creation.replace(year=2025))
-        self.repondre(ancienne, self.ali)  # une réponse ne doit pas changer l'ordre
+        self.repondre(ancienne, self.ali)
         ids = [q["id"] for q in self.client_de().get("/api/questions/").data]
         self.assertEqual(ids, [recente, ancienne])
 
     def test_auteur_impose_et_tags_dedoublonnes(self):
         question_id = self.poser(tags=["React", " react ", "JavaScript", ""], auteur_id=self.ali.id)
         question = Question.objects.get(pk=question_id)
-        self.assertEqual(question.auteur, self.awa)  # impossible de publier au nom d'un autre
+        self.assertEqual(question.auteur, self.awa)
         self.assertEqual(sorted(question.tags.values_list("nom", flat=True)), ["JavaScript", "React"])
 
 
@@ -93,11 +84,11 @@ class VuesTests(BaseForum):
         self.question_id = self.poser()
 
     def test_une_vue_par_membre_et_pas_l_auteur(self):
-        self.assertEqual(self.vues(self.client_de(self.awa)), 0)  # l'auteur ne compte pas
+        self.assertEqual(self.vues(self.client_de(self.awa)), 0)
         ali = self.client_de(self.ali)
-        self.assertEqual([self.vues(ali) for _ in range(3)], [1, 1, 1])  # actualiser ne compte pas
+        self.assertEqual([self.vues(ali) for _ in range(3)], [1, 1, 1])
         self.assertEqual(self.vues(self.client_de(self.moussa)), 2)
-        self.assertEqual(self.vues(self.client_de()), 2)  # un visiteur non connecté ne compte pas
+        self.assertEqual(self.vues(self.client_de()), 2)
 
 
 class VotesTests(BaseForum):
@@ -117,8 +108,8 @@ class VotesTests(BaseForum):
     def test_pour_contre_changer_et_annuler(self):
         self.assertEqual(self.voter(self.ali, 1).data, {"votes": 1, "mon_vote": 1})
         self.assertEqual(self.voter(self.moussa, 1).data, {"votes": 2, "mon_vote": 1})
-        self.assertEqual(self.voter(self.ali, -1).data, {"votes": 0, "mon_vote": -1})  # changement d'avis
-        self.assertEqual(self.voter(self.ali, -1).data, {"votes": 1, "mon_vote": 0})   # même vote = annulation
+        self.assertEqual(self.voter(self.ali, -1).data, {"votes": 0, "mon_vote": -1})
+        self.assertEqual(self.voter(self.ali, -1).data, {"votes": 1, "mon_vote": 0})
 
     def test_valeur_invalide_et_visiteur(self):
         self.assertEqual(self.voter(self.ali, 5).status_code, 400)
@@ -152,11 +143,9 @@ class ReponseAccepteeTests(BaseForum):
         self.assertEqual(list(Reponse.objects.filter(acceptee=True).values_list("pk", flat=True)), [self.r_moussa])
         self.assertTrue(Question.objects.get(pk=self.question_id).resolue)
 
-        # La réponse acceptée est affichée en premier
         liste = self.client_de().get(f"/api/questions/{self.question_id}/reponses/").data
         self.assertEqual(liste[0]["id"], self.r_moussa)
 
-        # Un second clic annule
         self.accepter(self.awa, self.r_moussa)
         self.assertFalse(Question.objects.get(pk=self.question_id).resolue)
 
@@ -182,7 +171,7 @@ class ModificationSuppressionTests(BaseForum):
         self.assertEqual(reponse.status_code, 200)
         self.assertIsNotNone(reponse.data["date_modification"])
         self.assertEqual(sorted(reponse.data["tags"]), ["Hooks", "React"])
-        self.assertFalse(Tag.objects.filter(nom="Ancien").exists())  # plus utilisé nulle part
+        self.assertFalse(Tag.objects.filter(nom="Ancien").exists())
 
     def test_supprimer_la_reponse_acceptee_rouvre_la_question(self):
         self.client_de(self.awa).post(f"/api/reponses/{self.reponse_id}/accepter/")
@@ -200,7 +189,7 @@ class FavorisTests(BaseForum):
         ali = self.client_de(self.ali)
         self.assertEqual(ali.post(f"/api/questions/{question_id}/favori/").data, {"favori": True})
         self.assertTrue(ali.get("/api/questions/").data[0]["favori"])
-        self.assertFalse(self.client_de(self.moussa).get("/api/questions/").data[0]["favori"])  # pas chez les autres
+        self.assertFalse(self.client_de(self.moussa).get("/api/questions/").data[0]["favori"])
         self.assertEqual(ali.post(f"/api/questions/{question_id}/favori/").data, {"favori": False})
 
 
@@ -210,7 +199,7 @@ class NotificationsTests(BaseForum):
 
     def test_reponse_notifie_l_auteur_mais_pas_soi_meme(self):
         question_id = self.poser()
-        self.repondre(question_id, self.awa)  # se répondre à soi-même
+        self.repondre(question_id, self.awa)
         self.repondre(question_id, self.ali)
         donnees = self.notifications(self.awa)
         self.assertEqual(donnees["non_lues"], 1)
@@ -225,7 +214,7 @@ class NotificationsTests(BaseForum):
         self.assertEqual(self.notifications(self.ali)["notifications"][0]["type"], "acceptee")
 
         awa.post(f"/api/reponses/{r_moussa}/accepter/")
-        self.assertEqual(self.notifications(self.ali)["notifications"], [])  # n'est plus vraie
+        self.assertEqual(self.notifications(self.ali)["notifications"], [])
         self.assertEqual(self.notifications(self.moussa)["non_lues"], 1)
 
     def test_ouvrir_la_question_marque_comme_lu(self):
@@ -240,7 +229,6 @@ class NotificationsTests(BaseForum):
         self.repondre(question_id, self.moussa)
         notification_id = Notification.objects.filter(destinataire=self.awa).first().id
 
-        # Ali ne peut pas marquer une notification d'Awa
         self.client_de(self.ali).post("/api/notifications/lire/", {"id": notification_id}, format="json")
         self.assertEqual(self.notifications(self.awa)["non_lues"], 2)
 
@@ -261,22 +249,22 @@ class NotificationsTests(BaseForum):
 
 class ClassementTests(BaseForum):
     def test_bareme(self):
-        question_id = self.poser()                       # Awa : 1 question = 2 pts
-        reponse_id = self.repondre(question_id, self.ali)  # Ali : 1 réponse = 5 pts
-        self.client_de(self.awa).post(f"/api/reponses/{reponse_id}/accepter/")         # + 15 pts
-        self.client_de(self.moussa).post(f"/api/reponses/{reponse_id}/voter/", {"valeur": 1}, format="json")  # + 1
+        question_id = self.poser()
+        reponse_id = self.repondre(question_id, self.ali)
+        self.client_de(self.awa).post(f"/api/reponses/{reponse_id}/accepter/")
+        self.client_de(self.moussa).post(f"/api/reponses/{reponse_id}/voter/", {"valeur": 1}, format="json")
 
         membres = {m["username"]: m for m in self.client_de().get("/api/classement/").data["membres"]}
         self.assertEqual(membres["ali"]["points"], 5 + 15 + 1)
         self.assertEqual(membres["ali"]["rang"], 1)
         self.assertEqual(membres["awa"]["points"], 2)
-        self.assertNotIn("moussa", membres)  # n'a rien publié
+        self.assertNotIn("moussa", membres)
 
 
 class ProfilMembreTests(BaseForum):
     def test_profil_statistiques_et_rang(self):
-        question_id = self.poser()                         # Awa : 1 question
-        reponse_id = self.repondre(question_id, self.ali)  # Ali : 1 réponse, acceptée, 1 vote
+        question_id = self.poser()
+        reponse_id = self.repondre(question_id, self.ali)
         self.client_de(self.awa).post(f"/api/reponses/{reponse_id}/accepter/")
         self.client_de(self.moussa).post(f"/api/reponses/{reponse_id}/voter/", {"valeur": 1}, format="json")
 
@@ -315,10 +303,9 @@ class DonneesDemonstrationTests(APITestCase):
         vrai_compte = Utilisateur.objects.create_user(username="vrai", email="vrai@insta.td", password="Forum-Test-2026")
 
         self.assertIn("10 membres, 14 questions", self.peupler())
-        self.assertIn("déjà présentes", self.peupler())  # relancer n'ajoute rien
+        self.assertIn("déjà présentes", self.peupler())
         self.assertEqual(Question.objects.count(), 14)
 
-        # Cohérence : personne ne vote pour soi, l'auteur ne compte pas dans les vues
         for reponse in Reponse.objects.prefetch_related("liste_votes"):
             self.assertNotIn(reponse.auteur_id, [v.utilisateur_id for v in reponse.liste_votes.all()])
         self.assertFalse(Question.objects.filter(liste_vues__utilisateur=F("auteur")).exists())

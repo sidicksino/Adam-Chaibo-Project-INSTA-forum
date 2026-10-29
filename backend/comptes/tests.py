@@ -1,9 +1,3 @@
-"""
-Tests des comptes : inscription, connexion, déconnexion, mot de passe oublié.
-Lancer :  python manage.py test
-(Django crée une base de données temporaire : vos vraies données ne sont jamais touchées.)
-"""
-
 import re
 
 from django.core import mail
@@ -32,7 +26,6 @@ class InscriptionTests(APITestCase):
         self.assertEqual(reponse.status_code, 201)
         self.assertEqual(reponse.data["prenom"], "Awa")
         self.assertNotIn("password", reponse.data)
-        # Le mot de passe est chiffré, jamais stocké en clair
         utilisateur = Utilisateur.objects.get(username="awa")
         self.assertNotEqual(utilisateur.password, MOT_DE_PASSE)
         self.assertTrue(utilisateur.check_password(MOT_DE_PASSE))
@@ -106,7 +99,6 @@ class MotDePasseOublieTests(APITestCase):
         return self.client.post("/api/comptes/mot-de-passe-oublie/", {"email": email}, format="json")
 
     def lien_recu(self):
-        """uid et jeton extraits du lien contenu dans le dernier email envoyé."""
         uid, jeton = re.search(r"#/reinitialiser/([\w-]+)/([\w-]+)", mail.outbox[-1].body).groups()
         return uid, jeton
 
@@ -119,7 +111,6 @@ class MotDePasseOublieTests(APITestCase):
         self.assertIn("http://localhost:5173/#/reinitialiser/", mail.outbox[0].body)
 
     def test_adresse_inconnue_meme_reponse_et_aucun_email(self):
-        # Impossible de deviner si une adresse a un compte
         connue, inconnue = self.demander(), self.demander("personne@insta.td")
         self.assertEqual(connue.data, inconnue.data)
         self.assertEqual(len(mail.outbox), 1)
@@ -138,10 +129,8 @@ class MotDePasseOublieTests(APITestCase):
         self.assertEqual(reponse.status_code, 200)
         self.utilisateur.refresh_from_db()
         self.assertTrue(self.utilisateur.check_password("Nouveau-Mot-2026"))
-        # Les anciennes sessions sont fermées
         self.assertFalse(Token.objects.filter(key=ancien_jeton.key).exists())
 
-        # Le lien ne sert qu'une fois
         deuxieme = self.client.post(
             "/api/comptes/reinitialiser/", {"uid": uid, "token": jeton, "password": "Encore-Autre-2026"}, format="json"
         )
@@ -219,7 +208,6 @@ class ChangerMotDePasseTests(APITestCase):
         self.assertEqual(reponse.status_code, 200)
         self.utilisateur.refresh_from_db()
         self.assertTrue(self.utilisateur.check_password("Nouveau-Mot-2026"))
-        # L'ancien jeton (autres appareils) ne marche plus, le nouveau oui
         self.assertEqual(self.client.get("/api/comptes/moi/").status_code, 401)
         self.client.credentials(HTTP_AUTHORIZATION=f"Token {reponse.data['token']}")
         self.assertEqual(self.client.get("/api/comptes/moi/").status_code, 200)

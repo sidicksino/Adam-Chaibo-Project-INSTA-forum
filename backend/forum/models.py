@@ -3,10 +3,8 @@ from django.db import models
 
 
 class Categorie(models.Model):
-    """Grand thème d'une question (Programmation, Réseaux, …)."""
 
     nom = models.CharField("nom", max_length=60, unique=True)
-    # Couleur affichée dans l'interface, au format « #rrggbb »
     couleur = models.CharField("couleur", max_length=7, default="#0b5ed7")
 
     class Meta:
@@ -19,7 +17,6 @@ class Categorie(models.Model):
 
 
 class Tag(models.Model):
-    """Mot-clé libre ajouté à une question (React, SQL, …)."""
 
     nom = models.CharField("nom", max_length=30, unique=True)
 
@@ -43,7 +40,6 @@ class Question(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="questions", verbose_name="auteur"
     )
     date_creation = models.DateTimeField("date de création", auto_now_add=True)
-    # Renseignée quand l'auteur modifie sa question (affiche « modifiée »)
     date_modification = models.DateTimeField("date de modification", null=True, blank=True)
     votes = models.IntegerField("votes", default=0)
     vues = models.PositiveIntegerField("vues", default=0)
@@ -68,14 +64,12 @@ class Reponse(models.Model):
     contenu = models.TextField("contenu")
     date_creation = models.DateTimeField("date de création", auto_now_add=True)
     date_modification = models.DateTimeField("date de modification", null=True, blank=True)
-    # Réponse choisie par l'auteur de la question : elle marque la question comme résolue.
     acceptee = models.BooleanField("acceptée", default=False)
     votes = models.IntegerField("votes", default=0)
 
     class Meta:
         verbose_name = "réponse"
         verbose_name_plural = "réponses"
-        # La réponse acceptée d'abord, puis les mieux notées, puis les plus anciennes
         ordering = ["-acceptee", "-votes", "date_creation"]
 
     def __str__(self):
@@ -83,7 +77,6 @@ class Reponse(models.Model):
 
 
 class VueQuestion(models.Model):
-    """Une personne qui a ouvert une question : chaque membre ne compte qu'une fois."""
 
     utilisateur = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="utilisateur"
@@ -102,7 +95,6 @@ class VueQuestion(models.Model):
 
 
 class Favori(models.Model):
-    """Question mise de côté par un utilisateur (menu « Favoris »)."""
 
     utilisateur = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favoris", verbose_name="utilisateur"
@@ -121,7 +113,6 @@ class Favori(models.Model):
 
 
 class Vote(models.Model):
-    """Base commune : +1 (utile) ou -1 (pas utile), un seul vote par personne."""
 
     class Valeur(models.IntegerChoices):
         POUR = 1, "Pour"
@@ -159,7 +150,6 @@ class VoteReponse(Vote):
 
 
 class Notification(models.Model):
-    """Prévient un membre de ce qui se passe autour de ses questions et réponses (cloche)."""
 
     class Type(models.TextChoices):
         REPONSE = "reponse", "Nouvelle réponse à votre question"
@@ -168,13 +158,11 @@ class Notification(models.Model):
     destinataire = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications", verbose_name="destinataire"
     )
-    # La personne qui a fait l'action (qui a répondu, qui a accepté)
     acteur = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+", verbose_name="acteur"
     )
     type = models.CharField("type", max_length=20, choices=Type.choices)
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="+", verbose_name="question")
-    # Supprimer la réponse supprime aussi la notification qui en parle
     reponse = models.ForeignKey(Reponse, on_delete=models.CASCADE, related_name="+", verbose_name="réponse")
     lue = models.BooleanField("lue", default=False)
     date = models.DateTimeField("date", auto_now_add=True)

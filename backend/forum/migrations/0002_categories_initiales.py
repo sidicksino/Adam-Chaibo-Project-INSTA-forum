@@ -1,6 +1,5 @@
 from django.db import migrations
 
-# Catégories proposées dans le formulaire « Poser une question »
 CATEGORIES = [
     ("Programmation", "#7c5cfc"),
     ("Réseaux", "#e5484d"),

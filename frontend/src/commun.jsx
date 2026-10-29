@@ -1,18 +1,14 @@
-/* ---------- Outils partagés entre les pages ---------- */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { lireNotifications, marquerNotificationsLues } from "./api";
 
 const COULEURS = ["#7c5cfc", "#0e9f6e", "#e5484d", "#f59e0b", "#0b5ed7", "#0891b2"];
 
-// Une couleur d'avatar stable pour chaque utilisateur
 export const couleurPour = (username = "") =>
   COULEURS[[...username].reduce((somme, c) => somme + c.charCodeAt(0), 0) % COULEURS.length];
 
-// « Awa D. » à partir du prénom et du nom
 export const nomCourt = (a) =>
   a.prenom ? `${a.prenom} ${a.nom ? `${a.nom[0]}.` : ""}`.trim() : a.username;
 
-// « il y a 5 minutes », « hier »…
 const formatRelatif = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
 export function ilYA(date) {
   const secondes = Math.round((new Date(date) - Date.now()) / 1000);
@@ -24,24 +20,19 @@ export function ilYA(date) {
   return "à l’instant";
 }
 
-// Adresse de la page de profil d'un membre (ex. #/membres/hawa.brahim)
 export const lienProfil = (username) => `#/membres/${encodeURIComponent(username)}`;
 
-// « 1 réponse », « 3 réponses »
 export const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
 const initiales = (nom = "") =>
   nom.split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
-// Pastille ronde avec les initiales (style .avatar dans HomePage.css)
 export const Avatar = ({ name, color = "#0b5ed7", size = 36 }) => (
   <span className="avatar" style={{ width: size, height: size, background: color, fontSize: size * 0.38 }}>
     {initiales(name)}
   </span>
 );
 
-/* ---------- Message temporaire en bas de l'écran (remplace alert()) ---------- */
-// const [avis, afficherAvis] = useAvis();  puis  afficherAvis("Texte")  et  <Avis texte={avis} />
 export function useAvis(duree = 4000) {
   const [avis, setAvis] = useState("");
   const minuteur = useRef(null);
@@ -59,11 +50,8 @@ export function useAvis(duree = 4000) {
 export const Avis = ({ texte }) =>
   texte ? <div className="avis" role="alert">{texte}</div> : null;
 
-/* ---------- Menu du compte (clic sur l'avatar en haut à droite) ---------- */
 const PROFILS = { etudiant: "Étudiant", enseignant: "Enseignant", personnel: "Personnel" };
 
-// Menu qui s'ouvre au clic et se ferme en cliquant ailleurs ou avec la touche Échap.
-// Renvoie [ouvert, setOuvert, zone] : zone est la ref à poser sur le bloc qui contient le menu.
 function useMenuDeroulant() {
   const [ouvert, setOuvert] = useState(false);
   const zone = useRef(null);
@@ -120,8 +108,7 @@ export function MenuCompte({ user, onLogout }) {
   );
 }
 
-/* ---------- Cloche des notifications ---------- */
-const VERIFIER_TOUTES_LES = 30000; // millisecondes entre deux vérifications
+const VERIFIER_TOUTES_LES = 30000;
 
 const texteNotification = (n) =>
   n.type === "acceptee"
@@ -134,12 +121,9 @@ export function Cloche() {
 
   const charger = useCallback(() => {
     lireNotifications().then(setDonnees).catch(() => {
-      // Serveur injoignable : on garde l'affichage précédent et on réessaiera plus tard.
     });
   }, []);
 
-  // Vérifie au chargement, toutes les 30 s quand l'onglet est visible,
-  // et à chaque changement de page (ouvrir une question marque ses notifications comme lues).
   useEffect(() => {
     charger();
     const minuteur = setInterval(() => { if (!document.hidden) charger(); }, VERIFIER_TOUTES_LES);
@@ -152,7 +136,6 @@ export function Cloche() {
     };
   }, [charger]);
 
-  // Recharger en ouvrant le menu, pour montrer les toutes dernières
   const basculer = () => {
     if (!ouvert) charger();
     setOuvert(!ouvert);
@@ -165,7 +148,6 @@ export function Cloche() {
   };
 
   const toutLire = () => {
-    // Affichage immédiat, puis confirmation par le serveur
     setDonnees((d) => ({ non_lues: 0, notifications: d.notifications.map((n) => ({ ...n, lue: true })) }));
     marquerNotificationsLues().then(charger).catch(charger);
   };
@@ -217,10 +199,6 @@ export function Cloche() {
   );
 }
 
-/* ---------- Solidité du mot de passe ----------
-   Indicateur sous les champs « mot de passe » (styles .solidite dans SignupPage.css).
-   Simple indication pour aider à choisir : la vraie vérification est faite par le serveur
-   (8 caractères minimum, pas trop courant, pas uniquement des chiffres). */
 const NIVEAUX = [
   { texte: "Trop court", classe: "is-faible" },
   { texte: "Faible", classe: "is-faible" },
@@ -236,7 +214,7 @@ function noterMotDePasse(mdp) {
   if (/[a-z]/.test(mdp) && /[A-Z]/.test(mdp)) points += 1;
   if (/\d/.test(mdp)) points += 0.5;
   if (/[^A-Za-z0-9]/.test(mdp)) points += 0.5;
-  if (/^\d+$/.test(mdp)) points = 1; // uniquement des chiffres : refusé par le serveur
+  if (/^\d+$/.test(mdp)) points = 1;
   return Math.min(4, Math.floor(points));
 }
 

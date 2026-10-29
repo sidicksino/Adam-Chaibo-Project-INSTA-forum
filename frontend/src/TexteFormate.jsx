@@ -1,11 +1,3 @@
-/* ---------- Mise en forme du code dans les questions et réponses ----------
-   Syntaxe (la même que GitHub, Discord ou Stack Overflow) :
-     ```python                 bloc de code, le langage est facultatif
-     print("Bonjour")
-     ```
-     `useState`                code dans une phrase
-   Le texte n'est jamais injecté comme HTML : seul le code passe par highlight.js,
-   qui échappe lui-même les caractères spéciaux (<, >, &). */
 
 import { useState } from "react";
 import hljs from "highlight.js/lib/core";
@@ -25,21 +17,17 @@ import xml from "highlight.js/lib/languages/xml";
 import "highlight.js/styles/github-dark.css";
 import "./TexteFormate.css";
 
-// Langages enseignés au département (chacun accepte aussi ses abréviations : js, py, sh, html…)
 const LANGAGES = { bash, c, cpp, csharp, css, java, javascript, json, php, python, sql, typescript, xml };
 Object.entries(LANGAGES).forEach(([nom, definition]) => hljs.registerLanguage(nom, definition));
 
-// Nom affiché au-dessus du bloc
 const NOMS = {
   bash: "Terminal", c: "C", cpp: "C++", csharp: "C#", css: "CSS", java: "Java", javascript: "JavaScript",
   json: "JSON", php: "PHP", python: "Python", sql: "SQL", typescript: "TypeScript", xml: "HTML",
 };
 
-// ```langage (facultatif), retour à la ligne, code, ``` de fermeture
 const BLOC = /```[ \t]*([\w+#.-]*)[ \t]*\r?\n([\s\S]*?)\r?\n?```/g;
 const EN_LIGNE = /`([^`\n]+)`/g;
 
-// Découpe le texte en morceaux { type: "texte" | "code", ... }
 function decouper(texte) {
   const morceaux = [];
   let position = 0;
@@ -54,10 +42,8 @@ function decouper(texte) {
   return morceaux;
 }
 
-// Texte normal avec les `petits morceaux de code` dans la phrase
 function TexteAvecCodeEnLigne({ contenu }) {
   const parties = contenu.split(EN_LIGNE);
-  // split avec une parenthèse capturante : les indices impairs sont le code
   return parties.map((partie, i) =>
     i % 2 === 1 ? <code key={i} className="code-en-ligne">{partie}</code> : partie
   );
@@ -67,9 +53,6 @@ function BlocCode({ langage, contenu }) {
   const [copie, setCopie] = useState(false);
   const code = contenu.replace(/\s+$/, "");
 
-  // Langage indiqué et connu → coloration de ce langage.
-  // Sinon highlight.js devine pour les couleurs, mais on affiche seulement « Code » :
-  // sa supposition est trop souvent fausse (du Java pris pour du C#, du JavaScript pour du C++).
   const definition = langage && hljs.getLanguage(langage);
   const resultat = definition
     ? hljs.highlight(code, { language: langage, ignoreIllegals: true })
@@ -80,8 +63,6 @@ function BlocCode({ langage, contenu }) {
     try {
       await navigator.clipboard.writeText(code);
     } catch {
-      // navigator.clipboard n'existe qu'en HTTPS ou sur localhost, et peut être refusé :
-      // on passe alors par une zone de texte invisible et l'ancienne commande « copy ».
       const zone = document.createElement("textarea");
       zone.value = code;
       zone.setAttribute("readonly", "");
@@ -103,13 +84,11 @@ function BlocCode({ langage, contenu }) {
         <span>{nom}</span>
         <button type="button" onClick={copier}>{copie ? "✓ Copié" : "Copier"}</button>
       </div>
-      {/* highlight.js renvoie du HTML déjà échappé : le code ne peut pas s'exécuter */}
       <pre><code className="hljs" dangerouslySetInnerHTML={{ __html: resultat.value }} /></pre>
     </div>
   );
 }
 
-/* Affiche un texte de question ou de réponse avec ses blocs de code */
 export default function TexteFormate({ texte, className = "" }) {
   return (
     <div className={`texte-formate ${className}`}>
@@ -124,7 +103,6 @@ export default function TexteFormate({ texte, className = "" }) {
   );
 }
 
-/* Version texte brut, pour l'extrait affiché sur la page d'accueil */
 export const sansMiseEnForme = (texte) =>
   texte
     .replace(BLOC, (_, _langage, code) => ` ${code.replace(/\s+/g, " ").trim()} `)
@@ -132,34 +110,27 @@ export const sansMiseEnForme = (texte) =>
     .replace(/\s+/g, " ")
     .trim();
 
-/* Bouton « </> Code » des formulaires : entoure la sélection de ```, ou insère un bloc vide */
 export function insererBlocCode(zone, valeur, setValeur) {
   const debut = zone.selectionStart;
   const fin = zone.selectionEnd;
   const selection = valeur.slice(debut, fin);
-  // Le bloc doit commencer sur sa propre ligne
   const avant = debut > 0 && valeur[debut - 1] !== "\n" ? "\n" : "";
   const bloc = `${avant}\`\`\`\n${selection}\n\`\`\`\n`;
   const curseur = debut + avant.length + 4;
   const placerCurseur = () => zone.setSelectionRange(curseur, curseur + selection.length);
 
-  // « insertText » écrit comme si l'utilisateur tapait : React reçoit l'événement « input »,
-  // le curseur reste en place et Ctrl+Z annule l'insertion.
   zone.focus();
   if (document.execCommand("insertText", false, bloc)) {
     placerCurseur();
     return;
   }
-  // Navigateur sans « insertText » : on remplace la valeur, puis on attend que React l'affiche
   setValeur(valeur.slice(0, debut) + bloc + valeur.slice(fin));
   requestAnimationFrame(() => setTimeout(placerCurseur, 0));
 }
 
-/* Bouton « </> Code » + astuce, à placer sous une zone de texte (zone = ref vers le textarea) */
 export function OutilCode({ zone, valeur, setValeur }) {
   return (
     <div className="outil-code">
-      {/* onMouseDown + preventDefault : le clic ne retire pas le curseur de la zone de texte */}
       <button type="button" onMouseDown={(e) => e.preventDefault()}
         onClick={() => insererBlocCode(zone.current, valeur, setValeur)}
         title="Insérer un bloc de code (ou entourer le texte sélectionné)">

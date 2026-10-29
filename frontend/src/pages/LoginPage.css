@@ -1,7 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
-/* Couleurs du design system INSTA-FORUM (frontend/images/design-system.png),
-   les mêmes que la page d'accueil */
 :root {
   --blue-900: #0f2a5c;
   --blue-700: #0f52cc;
@@ -32,7 +30,7 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   text-align: center;
   background:
     linear-gradient(180deg, rgba(23, 102, 240, 0.86) 0%, rgba(15, 42, 92, 0.78) 100%),
-    /* Photo compressée : 140 Ko au lieu de 6 Mo (original dans frontend/images/) */
+
     url("/images/insta-building.webp") center / cover no-repeat,
     #1557ea;
 }
@@ -105,7 +103,6 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   background: var(--blue-300);
 }
 
-/* ===== Panneau droit ===== */
 .login__panel {
   display: flex;
   align-items: center;
@@ -135,7 +132,6 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   color: var(--muted);
 }
 
-/* Champs */
 .field {
   display: flex;
   align-items: center;
@@ -179,7 +175,6 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
 .field__toggle:hover { color: var(--blue-600); }
 .field__toggle:focus-visible { outline: 2px solid var(--blue-400); }
 
-/* Options */
 .login__options {
   display: flex;
   align-items: center;
@@ -228,7 +223,6 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   text-align: left;
 }
 
-/* Boutons */
 .btn {
   display: flex;
   align-items: center;
@@ -243,7 +237,7 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
 }
 .btn:active { transform: translateY(1px); }
 .btn:focus-visible { outline: 3px solid rgba(23, 102, 240, 0.35); outline-offset: 2px; }
-/* Mêmes boutons que « Poser une question » sur la page d'accueil */
+
 .btn--primary {
   height: 58px;
   border: 0;
@@ -263,7 +257,6 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
 }
 .btn--outline:hover { border-color: var(--blue-600); background: var(--blue-soft); }
 
-/* Séparateur OU */
 .login__or {
   display: flex;
   align-items: center;
@@ -288,10 +281,9 @@ body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink)
   color: var(--muted);
 }
 
-/* ===== Responsive ===== */
 @media (max-width: 900px) {
   .login { grid-template-columns: 1fr; }
-  /* Sur téléphone, le panneau bleu devient un simple bandeau : le formulaire reste visible sans défiler */
+
   .login__brand-top { padding: 28px 20px 26px; }
   .login__brand-top svg { width: 72px; height: 46px; }
   .login__title { margin: 10px 0 8px; font-size: 2.25rem; }

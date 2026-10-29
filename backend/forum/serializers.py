@@ -4,7 +4,6 @@ from .models import Categorie, Notification, Question, Reponse, Tag
 
 
 class CategorieSerializer(serializers.ModelSerializer):
-    # Nombre de questions dans la catégorie (calculé dans la vue)
     nb_questions = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -20,7 +19,6 @@ class AuteurSerializer(serializers.Serializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     auteur = AuteurSerializer(read_only=True)
-    # Lecture : la catégorie complète ; écriture : seulement son identifiant
     categorie = CategorieSerializer(read_only=True)
     categorie_id = serializers.PrimaryKeyRelatedField(
         source="categorie",
@@ -31,7 +29,6 @@ class QuestionSerializer(serializers.ModelSerializer):
             "does_not_exist": "Cette catégorie n’existe pas.",
         },
     )
-    # Écriture : une liste de noms ; la lecture est gérée dans to_representation
     tags = serializers.ListField(
         child=serializers.CharField(
             max_length=30,
@@ -57,15 +54,12 @@ class QuestionSerializer(serializers.ModelSerializer):
         read_only_fields = ["date_creation", "date_modification", "votes", "vues", "resolue"]
 
     def get_reponses(self, question):
-        # nb_reponses est calculé dans la vue ; une question qui vient d'être créée n'en a aucune.
         return getattr(question, "nb_reponses", 0)
 
     def get_mon_vote(self, question):
-        # 1, -1 ou 0 : fourni par la vue dans le contexte (absent de la liste d'accueil)
         return self.context.get("mes_votes", {}).get(question.id, 0)
 
     def get_favori(self, question):
-        # Ensemble des questions favorites de l'utilisateur connecté, fourni par la vue
         return question.id in self.context.get("mes_favoris", set())
 
     def validate_titre(self, valeur):
@@ -81,7 +75,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         return valeur
 
     def validate_tags(self, valeurs):
-        # Supprime les espaces et les doublons (sans tenir compte des majuscules)
         uniques = {}
         for nom in valeurs:
             nom = nom.strip()
@@ -91,7 +84,6 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _tags(noms):
-        # Réutilise un tag existant (« react » et « React » sont le même tag)
         return [Tag.objects.filter(nom__iexact=nom).first() or Tag.objects.create(nom=nom) for nom in noms]
 
     def create(self, donnees):
@@ -101,12 +93,10 @@ class QuestionSerializer(serializers.ModelSerializer):
         return question
 
     def update(self, question, donnees):
-        # Les tags ne sont remplacés que s'ils sont envoyés
         noms_tags = donnees.pop("tags", None)
         question = super().update(question, donnees)
         if noms_tags is not None:
             question.tags.set(self._tags(noms_tags))
-            # Les tags qui ne servent plus à aucune question sont supprimés
             Tag.objects.filter(questions__isnull=True).delete()
         return question
 
@@ -147,7 +137,6 @@ class VoteSerializer(serializers.Serializer):
 
 class NotificationSerializer(serializers.ModelSerializer):
     acteur = AuteurSerializer(read_only=True)
-    # Juste ce qu'il faut pour afficher le titre et ouvrir la question
     question = serializers.SerializerMethodField()
 
     class Meta:
