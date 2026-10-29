@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./LoginPage.css";   // styles communs (panneau gauche, boutons, champs)
 import "./SignupPage.css";  // styles propres à l'inscription
+import { Solidite } from "../commun";
 
 /* ---------- Icônes ---------- */
 const Icon = ({ children, size = 22, ...props }) => (
@@ -82,42 +83,6 @@ function Field({ icon, error, right, children }) {
         {right}
       </label>
       {error && <p className="field__error" role="alert">{error}</p>}
-    </div>
-  );
-}
-
-/* ---------- Solidité du mot de passe ----------
-   Simple indication pour aider à choisir : la vraie vérification est faite par le serveur
-   (8 caractères minimum, pas trop courant, pas uniquement des chiffres). */
-const NIVEAUX = [
-  { texte: "Trop court", classe: "is-faible" },
-  { texte: "Faible", classe: "is-faible" },
-  { texte: "Moyen", classe: "is-moyen" },
-  { texte: "Bon", classe: "is-bon" },
-  { texte: "Excellent", classe: "is-excellent" },
-];
-
-function noterMotDePasse(mdp) {
-  if (mdp.length < 8) return 0;
-  let points = 1;
-  if (mdp.length >= 12) points += 1;
-  if (/[a-z]/.test(mdp) && /[A-Z]/.test(mdp)) points += 1;
-  if (/\d/.test(mdp)) points += 0.5;
-  if (/[^A-Za-z0-9]/.test(mdp)) points += 0.5;
-  if (/^\d+$/.test(mdp)) points = 1; // uniquement des chiffres : refusé par le serveur
-  return Math.min(4, Math.floor(points));
-}
-
-function Solidite({ motDePasse }) {
-  if (!motDePasse) return null;
-  const note = noterMotDePasse(motDePasse);
-  const { texte, classe } = NIVEAUX[note];
-  return (
-    <div className={`solidite ${classe}`} aria-live="polite">
-      <div className="solidite__barres" aria-hidden="true">
-        {[1, 2, 3, 4].map((n) => <span key={n} className={n <= Math.max(note, 1) ? "is-pleine" : ""} />)}
-      </div>
-      <small>Solidité : <strong>{texte}</strong>{note < 3 && " · mélangez majuscules, chiffres et symboles"}</small>
     </div>
   );
 }

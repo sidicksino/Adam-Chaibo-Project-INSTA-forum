@@ -24,6 +24,9 @@ export function ilYA(date) {
   return "à l’instant";
 }
 
+// Adresse de la page de profil d'un membre (ex. #/membres/hawa.brahim)
+export const lienProfil = (username) => `#/membres/${encodeURIComponent(username)}`;
+
 // « 1 réponse », « 3 réponses »
 export const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? "s" : ""}`;
 
@@ -105,6 +108,9 @@ export function MenuCompte({ user, onLogout }) {
               {PROFILS[user?.profil] ?? ""}{user?.niveau ? ` · ${user.niveau}` : ""}
             </span>
           </div>
+          <a role="menuitem" className="compte__lien" href={lienProfil(user?.username)} onClick={() => setOuvert(false)}>
+            Mon profil
+          </a>
           <button type="button" role="menuitem" className="compte__deconnexion" onClick={onLogout}>
             Se déconnecter
           </button>
@@ -207,6 +213,43 @@ export function Cloche() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------- Solidité du mot de passe ----------
+   Indicateur sous les champs « mot de passe » (styles .solidite dans SignupPage.css).
+   Simple indication pour aider à choisir : la vraie vérification est faite par le serveur
+   (8 caractères minimum, pas trop courant, pas uniquement des chiffres). */
+const NIVEAUX = [
+  { texte: "Trop court", classe: "is-faible" },
+  { texte: "Faible", classe: "is-faible" },
+  { texte: "Moyen", classe: "is-moyen" },
+  { texte: "Bon", classe: "is-bon" },
+  { texte: "Excellent", classe: "is-excellent" },
+];
+
+function noterMotDePasse(mdp) {
+  if (mdp.length < 8) return 0;
+  let points = 1;
+  if (mdp.length >= 12) points += 1;
+  if (/[a-z]/.test(mdp) && /[A-Z]/.test(mdp)) points += 1;
+  if (/\d/.test(mdp)) points += 0.5;
+  if (/[^A-Za-z0-9]/.test(mdp)) points += 0.5;
+  if (/^\d+$/.test(mdp)) points = 1; // uniquement des chiffres : refusé par le serveur
+  return Math.min(4, Math.floor(points));
+}
+
+export function Solidite({ motDePasse }) {
+  if (!motDePasse) return null;
+  const note = noterMotDePasse(motDePasse);
+  const { texte, classe } = NIVEAUX[note];
+  return (
+    <div className={`solidite ${classe}`} aria-live="polite">
+      <div className="solidite__barres" aria-hidden="true">
+        {[1, 2, 3, 4].map((n) => <span key={n} className={n <= Math.max(note, 1) ? "is-pleine" : ""} />)}
+      </div>
+      <small>Solidité : <strong>{texte}</strong>{note < 3 && " · mélangez majuscules, chiffres et symboles"}</small>
     </div>
   );
 }

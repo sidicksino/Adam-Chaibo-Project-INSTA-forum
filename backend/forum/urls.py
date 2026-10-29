@@ -15,6 +15,7 @@ urlpatterns = [
     path("reponses/<int:pk>/voter/", views.voter_reponse, name="voter-reponse"),
     path("notifications/", views.notifications, name="notifications"),
     path("notifications/lire/", views.lire_notifications, name="lire-notifications"),
+    path("membres/<str:username>/", views.membre, name="membre"),
     path("classement/", views.classement, name="classement"),
     path("statistiques/", views.statistiques, name="statistiques"),
 ]

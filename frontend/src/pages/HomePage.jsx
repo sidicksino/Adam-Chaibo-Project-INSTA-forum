@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "./HomePage.css";
 import { basculerFavori, listerCategories, listerQuestions, lireClassement, lireStatistiques } from "../api";
-import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
+import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
 import { sansMiseEnForme } from "../TexteFormate";
 
 
@@ -134,10 +134,10 @@ function CarteQuestion({ q, onOuvrir, onFavori }) {
       )}
 
       <div className="qcarte__pied">
-        <span className="qcarte__auteur">
+        <a className="qcarte__auteur lien-membre" href={lienProfil(q.authorUsername)} title="Voir le profil">
           <Avatar name={q.author} color={q.color} size={36} />
           <span><strong>{q.author}</strong><small>{q.when}</small></span>
-        </span>
+        </a>
         <span className="qcarte__compteurs">
           <span className="qcarte__compteur" title={pluriel(q.votes, "vote")}>
             <Icon size={15}><path d="M12 4l7 8h-4v8H9v-8H5z" /></Icon>{q.votes}
@@ -482,10 +482,10 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
                             <tr key={m.username} className={m.username === user?.username ? "is-moi" : ""}>
                               <td className="classement__rang">{m.rang <= 3 ? ["🥇", "🥈", "🥉"][m.rang - 1] : m.rang}</td>
                               <td>
-                                <span className="classement__membre">
+                                <a className="classement__membre lien-membre" href={lienProfil(m.username)}>
                                   <Avatar name={`${m.prenom} ${m.nom}`} color={couleurPour(m.username)} size={28} />
                                   {nomCourt(m)}{m.username === user?.username && " (vous)"}
-                                </span>
+                                </a>
                               </td>
                               <td>{m.questions}</td>
                               <td>{m.reponses}</td>
@@ -529,7 +529,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
                   <li key={m.username}>
                     <Avatar name={`${m.prenom} ${m.nom}`} color={couleurPour(m.username)} />
                     <div>
-                      <strong>{nomCourt(m)}</strong>
+                      <a className="lien-membre" href={lienProfil(m.username)}><strong>{nomCourt(m)}</strong></a>
                       <small>{pluriel(m.nb_reponses, "réponse")}</small>
                     </div>
                     <span className="top__trophy">{I.trophy}</span>

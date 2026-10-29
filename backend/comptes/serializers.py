@@ -20,6 +20,48 @@ class UtilisateurSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email", "prenom", "nom", "profil", "niveau"]
 
 
+class ModificationProfilSerializer(serializers.ModelSerializer):
+    """Ce qu'un membre peut changer lui-même : nom, prénom, profil et niveau."""
+
+    prenom = serializers.CharField(source="first_name", max_length=150)
+    nom = serializers.CharField(source="last_name", max_length=150)
+
+    class Meta:
+        model = Utilisateur
+        fields = ["prenom", "nom", "profil", "niveau"]
+        extra_kwargs = {"niveau": {"required": False}}
+
+    def validate(self, donnees):
+        # Même règle qu'à l'inscription : niveau obligatoire pour un étudiant, vide sinon
+        profil = donnees.get("profil", self.instance.profil)
+        niveau = donnees.get("niveau", self.instance.niveau)
+        if profil == Utilisateur.Profil.ETUDIANT:
+            if not niveau:
+                raise serializers.ValidationError({"niveau": "Choisissez votre niveau."})
+        else:
+            donnees["niveau"] = ""
+        return donnees
+
+
+class ChangementMotDePasseSerializer(serializers.Serializer):
+    ancien = serializers.CharField(write_only=True, error_messages={"blank": "Indiquez votre mot de passe actuel."})
+    nouveau = serializers.CharField(write_only=True, error_messages={"blank": "Choisissez un nouveau mot de passe."})
+
+    def validate_ancien(self, valeur):
+        if not self.context["request"].user.check_password(valeur):
+            raise serializers.ValidationError("Mot de passe actuel incorrect.")
+        return valeur
+
+    def validate(self, donnees):
+        if donnees["ancien"] == donnees["nouveau"]:
+            raise serializers.ValidationError({"nouveau": "Le nouveau mot de passe doit être différent de l’actuel."})
+        try:
+            validate_password(donnees["nouveau"], user=self.context["request"].user)
+        except Exception as erreur:
+            raise serializers.ValidationError({"nouveau": list(erreur.messages)})
+        return donnees
+
+
 class InscriptionSerializer(serializers.ModelSerializer):
     """Création d'un compte à partir du formulaire d'inscription."""
 

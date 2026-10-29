@@ -54,6 +54,7 @@ async function requete(chemin, { methode = "GET", corps } = {}) {
     const erreur = new Error(messageErreur(donnees));
     // Détail par champ (ex. { username: ["Ce nom d'utilisateur est déjà pris."] }), pour les formulaires
     erreur.champs = donnees && typeof donnees === "object" ? donnees : {};
+    erreur.statut = reponse.status; // ex. 404 : introuvable
     throw erreur;
   }
   return donnees;
@@ -134,6 +135,22 @@ export const marquerNotificationsLues = (id) =>
 export const listerCategories = () => requete("/categories/");
 
 export const lireStatistiques = () => requete("/statistiques/");
+
+/* ---------- Profil ---------- */
+// Profil public d'un membre : statistiques, rang, questions et réponses
+export const lireMembre = (username) => requete(`/membres/${encodeURIComponent(username)}/`);
+
+// Modifier son prénom, nom, profil ou niveau ; renvoie l'utilisateur à jour
+export const modifierMonProfil = (donnees) => requete("/comptes/moi/", { methode: "PATCH", corps: donnees });
+
+// Le serveur déconnecte les autres appareils et renvoie un nouveau jeton pour celui-ci
+export async function changerMotDePasse(ancien, nouveau) {
+  const { token, detail } = await requete("/comptes/mot-de-passe/", { methode: "POST", corps: { ancien, nouveau } });
+  // Le nouveau jeton remplace l'ancien là où il était rangé (« Se souvenir de moi » ou non)
+  const seSouvenir = localStorage.getItem(CLE_JETON) !== null;
+  enregistrerJeton(token, seSouvenir);
+  return detail;
+}
 
 /* ---------- Mot de passe oublié ---------- */
 export const demanderReinitialisation = (email) =>

@@ -277,9 +277,8 @@ POINTS_REPONSE = 5
 POINTS_ACCEPTEE = 15  # en plus des points de la réponse
 
 
-@api_view(["GET"])
-def classement(request):
-    """GET /api/classement/ : les membres classés par points."""
+def calculer_classement():
+    """Tous les membres qui ont participé, du plus de points au moins, avec leur rang."""
     Utilisateur = get_user_model()
 
     # Chaque total est calculé séparément : les combiner dans une seule requête
@@ -311,7 +310,13 @@ def classement(request):
     lignes.sort(key=lambda m: (-m["points"], m["username"]))
     for rang, ligne in enumerate(lignes, start=1):
         ligne["rang"] = rang
+    return lignes
 
+
+@api_view(["GET"])
+def classement(request):
+    """GET /api/classement/ : les membres classés par points."""
+    lignes = calculer_classement()
     return Response({
         "bareme": {
             "question": POINTS_QUESTION,
@@ -319,6 +324,54 @@ def classement(request):
             "acceptee": POINTS_ACCEPTEE,
         },
         "membres": lignes[:50],
+    })
+
+
+@api_view(["GET"])
+def membre(request, username):
+    """
+    GET /api/membres/<nom d'utilisateur>/ : profil public d'un membre
+    (statistiques, rang, ses questions et ses réponses). L'email n'est visible que par lui-même.
+    """
+    Utilisateur = get_user_model()
+    personne = get_object_or_404(Utilisateur, username=username, is_active=True)
+
+    ligne = next((m for m in calculer_classement() if m["username"] == personne.username), None)
+    questions = (
+        Question.objects.filter(auteur=personne).select_related("categorie")
+        .annotate(nb_reponses=Count("reponses")).order_by("-date_creation")[:50]
+    )
+    reponses = Reponse.objects.filter(auteur=personne).select_related("question").order_by("-date_creation")[:50]
+
+    return Response({
+        **AuteurSerializer(personne).data,
+        "profil": personne.profil,
+        "niveau": personne.niveau,
+        "date_inscription": personne.date_joined,
+        "email": personne.email if request.user == personne else None,
+        "stats": {
+            "questions": ligne["questions"] if ligne else 0,
+            "reponses": ligne["reponses"] if ligne else 0,
+            "acceptees": ligne["acceptees"] if ligne else 0,
+            "votes_recus": ligne["votes_recus"] if ligne else 0,
+            "points": ligne["points"] if ligne else 0,
+            "rang": ligne["rang"] if ligne else None,
+        },
+        "questions": [
+            {
+                "id": q.id, "titre": q.titre, "date_creation": q.date_creation, "votes": q.votes,
+                "reponses": q.nb_reponses, "resolue": q.resolue,
+                "categorie": {"nom": q.categorie.nom, "couleur": q.categorie.couleur},
+            }
+            for q in questions
+        ],
+        "reponses": [
+            {
+                "id": r.id, "extrait": r.contenu[:160], "date_creation": r.date_creation, "votes": r.votes,
+                "acceptee": r.acceptee, "question": {"id": r.question_id, "titre": r.question.titre},
+            }
+            for r in reponses
+        ],
     })
 
 

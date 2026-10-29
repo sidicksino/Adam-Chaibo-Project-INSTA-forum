@@ -13,8 +13,8 @@ from rest_framework.response import Response
 
 from .models import Utilisateur
 from .serializers import (
-    ConnexionSerializer, DemandeReinitialisationSerializer, InscriptionSerializer, ReinitialisationSerializer,
-    UtilisateurSerializer,
+    ChangementMotDePasseSerializer, ConnexionSerializer, DemandeReinitialisationSerializer, InscriptionSerializer,
+    ModificationProfilSerializer, ReinitialisationSerializer, UtilisateurSerializer,
 )
 
 journal = logging.getLogger(__name__)
@@ -49,11 +49,35 @@ def deconnexion(request):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def moi(request):
-    """GET /api/comptes/moi/ : renvoie l'utilisateur correspondant au jeton."""
+    """
+    GET   /api/comptes/moi/ : l'utilisateur correspondant au jeton
+    PATCH /api/comptes/moi/ : modifier son nom, prénom, profil ou niveau
+    """
+    if request.method == "PATCH":
+        serializer = ModificationProfilSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
     return Response(UtilisateurSerializer(request.user).data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def changer_mot_de_passe(request):
+    """
+    POST /api/comptes/mot-de-passe/ : {"ancien": …, "nouveau": …}
+    Les autres appareils sont déconnectés ; un nouveau jeton est renvoyé pour celui-ci.
+    """
+    serializer = ChangementMotDePasseSerializer(data=request.data, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    utilisateur = request.user
+    utilisateur.set_password(serializer.validated_data["nouveau"])
+    utilisateur.save(update_fields=["password"])
+    Token.objects.filter(user=utilisateur).delete()
+    jeton = Token.objects.create(user=utilisateur)
+    return Response({"token": jeton.key, "detail": "Mot de passe modifié."})
 
 
 MESSAGE_ENVOYE = (

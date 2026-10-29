@@ -273,6 +273,38 @@ class ClassementTests(BaseForum):
         self.assertNotIn("moussa", membres)  # n'a rien publié
 
 
+class ProfilMembreTests(BaseForum):
+    def test_profil_statistiques_et_rang(self):
+        question_id = self.poser()                         # Awa : 1 question
+        reponse_id = self.repondre(question_id, self.ali)  # Ali : 1 réponse, acceptée, 1 vote
+        self.client_de(self.awa).post(f"/api/reponses/{reponse_id}/accepter/")
+        self.client_de(self.moussa).post(f"/api/reponses/{reponse_id}/voter/", {"valeur": 1}, format="json")
+
+        profil = self.client_de().get("/api/membres/ali/").data
+        self.assertEqual(profil["prenom"], "Ali")
+        self.assertEqual(profil["stats"], {
+            "questions": 0, "reponses": 1, "acceptees": 1, "votes_recus": 1, "points": 21, "rang": 1,
+        })
+        self.assertEqual(profil["reponses"][0]["question"]["id"], question_id)
+        self.assertTrue(profil["reponses"][0]["acceptee"])
+
+        awa = self.client_de().get("/api/membres/awa/").data
+        self.assertEqual([q["id"] for q in awa["questions"]], [question_id])
+        self.assertEqual(awa["stats"]["rang"], 2)
+
+    def test_membre_sans_activite(self):
+        stats = self.client_de().get("/api/membres/moussa/").data["stats"]
+        self.assertEqual((stats["points"], stats["rang"]), (0, None))
+
+    def test_email_visible_seulement_par_soi_meme(self):
+        self.assertIsNone(self.client_de().get("/api/membres/awa/").data["email"])
+        self.assertIsNone(self.client_de(self.ali).get("/api/membres/awa/").data["email"])
+        self.assertEqual(self.client_de(self.awa).get("/api/membres/awa/").data["email"], "awa@insta.td")
+
+    def test_membre_inconnu(self):
+        self.assertEqual(self.client_de().get("/api/membres/personne/").status_code, 404)
+
+
 class DonneesDemonstrationTests(APITestCase):
     def peupler(self, *options):
         sortie = StringIO()

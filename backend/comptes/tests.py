@@ -163,3 +163,63 @@ class MotDePasseOublieTests(APITestCase):
         self.assertEqual(reponse.status_code, 400)
         self.utilisateur.refresh_from_db()
         self.assertTrue(self.utilisateur.check_password(MOT_DE_PASSE))
+
+
+class ModifierSonProfilTests(APITestCase):
+    def setUp(self):
+        self.utilisateur = Utilisateur.objects.create_user(
+            username="awa", email="awa@insta.td", password=MOT_DE_PASSE,
+            first_name="Awa", last_name="Diallo", profil="etudiant", niveau="L2",
+        )
+        self.jeton = Token.objects.create(user=self.utilisateur)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.jeton.key}")
+
+    def test_changer_nom_et_niveau(self):
+        reponse = self.client.patch("/api/comptes/moi/", {"nom": "Mahamat", "niveau": "L3"}, format="json")
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual((reponse.data["prenom"], reponse.data["nom"], reponse.data["niveau"]), ("Awa", "Mahamat", "L3"))
+
+    def test_niveau_obligatoire_pour_un_etudiant_et_vide_sinon(self):
+        reponse = self.client.patch("/api/comptes/moi/", {"niveau": ""}, format="json")
+        self.assertEqual(reponse.data["niveau"], ["Choisissez votre niveau."])
+        reponse = self.client.patch("/api/comptes/moi/", {"profil": "enseignant"}, format="json")
+        self.assertEqual((reponse.data["profil"], reponse.data["niveau"]), ("enseignant", ""))
+
+    def test_impossible_de_changer_son_nom_utilisateur_ou_son_email_ici(self):
+        self.client.patch("/api/comptes/moi/", {"username": "pirate", "email": "pirate@insta.td"}, format="json")
+        self.utilisateur.refresh_from_db()
+        self.assertEqual((self.utilisateur.username, self.utilisateur.email), ("awa", "awa@insta.td"))
+
+    def test_visiteur_refuse(self):
+        self.client.credentials()
+        self.assertEqual(self.client.patch("/api/comptes/moi/", {"nom": "X"}, format="json").status_code, 401)
+
+
+class ChangerMotDePasseTests(APITestCase):
+    url = "/api/comptes/mot-de-passe/"
+
+    def setUp(self):
+        self.utilisateur = Utilisateur.objects.create_user(username="awa", email="awa@insta.td", password=MOT_DE_PASSE)
+        self.jeton = Token.objects.create(user=self.utilisateur)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.jeton.key}")
+
+    def test_ancien_mot_de_passe_obligatoire(self):
+        reponse = self.client.post(self.url, {"ancien": "faux", "nouveau": "Nouveau-Mot-2026"}, format="json")
+        self.assertEqual(reponse.status_code, 400)
+        self.assertEqual(reponse.data["ancien"], ["Mot de passe actuel incorrect."])
+
+    def test_nouveau_trop_faible_ou_identique(self):
+        faible = self.client.post(self.url, {"ancien": MOT_DE_PASSE, "nouveau": "12345678"}, format="json")
+        self.assertEqual(faible.status_code, 400)
+        identique = self.client.post(self.url, {"ancien": MOT_DE_PASSE, "nouveau": MOT_DE_PASSE}, format="json")
+        self.assertEqual(identique.data["nouveau"], ["Le nouveau mot de passe doit être différent de l’actuel."])
+
+    def test_changement_reussi_et_nouveau_jeton(self):
+        reponse = self.client.post(self.url, {"ancien": MOT_DE_PASSE, "nouveau": "Nouveau-Mot-2026"}, format="json")
+        self.assertEqual(reponse.status_code, 200)
+        self.utilisateur.refresh_from_db()
+        self.assertTrue(self.utilisateur.check_password("Nouveau-Mot-2026"))
+        # L'ancien jeton (autres appareils) ne marche plus, le nouveau oui
+        self.assertEqual(self.client.get("/api/comptes/moi/").status_code, 401)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {reponse.data['token']}")
+        self.assertEqual(self.client.get("/api/comptes/moi/").status_code, 200)

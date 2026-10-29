@@ -193,9 +193,20 @@
 .compte__identite { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 12px; border-bottom: 1px solid var(--h-line); }
 .compte__identite strong { color: var(--h-ink); font-size: 0.9375rem; }
 .compte__identite span { color: var(--h-gray); font-size: 0.8125rem; }
+.compte__lien {
+  display: block;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--h-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.compte__lien:hover { background: #f3f7fe; color: var(--h-blue); }
 .compte__deconnexion {
   width: 100%;
-  margin-top: 6px;
+  margin-top: 2px;
   padding: 10px 12px;
   border: 0;
   border-radius: 8px;
@@ -428,6 +439,11 @@
 .question__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 0.875rem; color: var(--h-gray); }
 .question__meta svg { color: var(--h-gray); }
 .question__author { color: var(--h-ink); font-weight: 700; }
+
+/* Lien vers le profil d'un membre (noms d'auteurs dans tout le site) */
+.lien-membre { color: inherit; text-decoration: none; }
+.lien-membre:hover strong,
+a.lien-membre:hover:not(:has(strong)) { color: var(--h-blue); text-decoration: underline; }
 
 /* Étoile « favori » en haut à droite de la carte */
 .etoile {

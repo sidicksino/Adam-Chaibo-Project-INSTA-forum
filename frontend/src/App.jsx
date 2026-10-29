@@ -7,6 +7,7 @@ import HomePage from "./pages/HomePage";
 import AskQuestionPage from "./pages/AskQuestionPage";
 import QuestionPage from "./pages/QuestionPage";
 import MotDePassePage from "./pages/MotDePassePage";
+import ProfilPage from "./pages/ProfilPage";
 import {
   connecter, deconnecter, inscrire, modifierQuestion, publierQuestion, utilisateurConnecte,
 } from "./api";
@@ -53,6 +54,9 @@ function analyser(adresse) {
   const detail = chemin.match(/^\/questions\/(\d+)$/);
   if (detail) return { page: "question", id: Number(detail[1]) };
 
+  const profil = chemin.match(/^\/membres\/([^/]+)$/);
+  if (profil) return { page: "profil", username: decodeURIComponent(profil[1]) };
+
   const modification = chemin.match(/^\/questions\/(\d+)\/modifier$/);
   if (modification) return { page: "modifier", id: Number(modification[1]) };
 
@@ -73,6 +77,7 @@ const TITRES = {
   reinitialiser: "Nouveau mot de passe",
   poser: "Poser une question",
   modifier: "Modifier la question",
+  profil: "Profil",
   question: "Question",
 };
 
@@ -200,6 +205,18 @@ export default function App() {
         onBack={() => aller(derniereVue.current)}
         onEdit={() => aller(`/questions/${route.id}/modifier`)}
         onDeleted={() => aller(derniereVue.current)}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (route.page === "profil") {
+    return (
+      <ProfilPage
+        username={route.username}
+        user={currentUser}
+        onUserUpdate={setCurrentUser}
+        onBack={() => window.history.length > 1 ? window.history.back() : aller(derniereVue.current)}
         onLogout={handleLogout}
       />
     );

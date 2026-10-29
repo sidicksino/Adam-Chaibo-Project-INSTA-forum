@@ -5,7 +5,7 @@ import {
   accepterReponse, basculerFavori, listerReponses, lireQuestion, modifierReponse, publierReponse,
   supprimerQuestion, supprimerReponse, voterQuestion, voterReponse,
 } from "../api";
-import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, nomCourt, pluriel, useAvis } from "../commun";
+import { Avatar, Avis, Cloche, MenuCompte, couleurPour, ilYA, lienProfil, nomCourt, pluriel, useAvis } from "../commun";
 import TexteFormate, { OutilCode } from "../TexteFormate";
 
 const GradCap = () => (
@@ -237,7 +237,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
               <div className="question__meta">
                 <Avatar name={`${question.auteur.prenom} ${question.auteur.nom}`}
                   color={couleurPour(question.auteur.username)} size={24} />
-                <span className="question__author">{nomCourt(question.auteur)}</span>
+                <a className="question__author lien-membre" href={lienProfil(question.auteur.username)}>{nomCourt(question.auteur)}</a>
                 <span>•</span><span>{ilYA(question.date_creation)}</span>
                 <Modifiee date={question.date_modification} />
                 <span>•</span><span>{pluriel(question.vues, "vue")}</span>
@@ -300,7 +300,7 @@ export default function QuestionPage({ id, user, onBack, onEdit, onDeleted, onLo
                   <div className="question__meta">
                     <Avatar name={`${r.auteur.prenom} ${r.auteur.nom}`}
                       color={couleurPour(r.auteur.username)} size={24} />
-                    <span className="question__author">{nomCourt(r.auteur)}</span>
+                    <a className="question__author lien-membre" href={lienProfil(r.auteur.username)}>{nomCourt(r.auteur)}</a>
                     <span>•</span><span>{ilYA(r.date_creation)}</span>
                     <Modifiee date={r.date_modification} />
                   </div>
