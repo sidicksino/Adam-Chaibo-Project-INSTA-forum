@@ -85,6 +85,71 @@ const GradCap = () => (
   </svg>
 );
 
+/* ---------- Carte d'une question (design « mise en avant ») ---------- */
+const ICONES_CATEGORIE = {
+  "Programmation": <path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14" />,
+  "Réseaux": <><circle cx="12" cy="5" r="2.5" /><circle cx="5" cy="19" r="2.5" /><circle cx="19" cy="19" r="2.5" /><path d="M12 7.5v4M12 11.5l-5.5 5.5M12 11.5l5.5 5.5" /></>,
+  "Bases de données": <><ellipse cx="12" cy="5.5" rx="7" ry="2.5" /><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" /></>,
+  "Systèmes & Linux": <><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M7 9l3 3-3 3M12.5 15H17" /></>,
+  "Génie logiciel": <path d="M12 3l9 4.5-9 4.5-9-4.5zM3 12l9 4.5 9-4.5M3 16.5L12 21l9-4.5" />,
+};
+const IconeCategorie = ({ nom }) => (
+  <Icon size={16}>{ICONES_CATEGORIE[nom] ?? <path d="M3 6a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />}</Icon>
+);
+
+// Badge des réponses : orange s'il n'y en a aucune, vert si la question est résolue
+function BadgeReponses({ nombre, resolue }) {
+  const texte = `${nombre} réponse${nombre > 1 ? "s" : ""}`;
+  if (resolue) return <span className="qcarte__compteur is-resolue">{I.check}Résolue · {texte}</span>;
+  return (
+    <span className={`qcarte__compteur${nombre === 0 ? " is-sans-reponse" : " is-reponses"}`}>
+      <Icon size={15}><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" /></Icon>
+      {texte}
+    </span>
+  );
+}
+
+function CarteQuestion({ q, onOuvrir, onFavori }) {
+  return (
+    <article className="card qcarte">
+      <div className="qcarte__haut">
+        {/* La catégorie prend sa couleur (définie dans l'administration) */}
+        <span className="qcarte__categorie" style={{ "--couleur-categorie": q.categorieCouleur }}>
+          <IconeCategorie nom={q.categorie} />{q.categorie}
+        </span>
+        <button type="button" className={`etoile${q.favori ? " is-active" : ""}`} onClick={onFavori}
+          aria-pressed={q.favori} title={q.favori ? "Retirer des favoris" : "Ajouter aux favoris"}
+          aria-label={q.favori ? "Retirer des favoris" : "Ajouter aux favoris"}>
+          {q.favori ? I.etoilePleine : I.star}
+        </button>
+      </div>
+
+      <h2 className="qcarte__titre">
+        <button type="button" onClick={onOuvrir}>{q.title}</button>
+      </h2>
+      <p className="qcarte__extrait">{q.excerpt}</p>
+
+      {q.tags.length > 0 && (
+        <div className="qcarte__tags">{q.tags.map((t) => <span key={t}>#{t}</span>)}</div>
+      )}
+
+      <div className="qcarte__pied">
+        <span className="qcarte__auteur">
+          <Avatar name={q.author} color={q.color} size={36} />
+          <span><strong>{q.author}</strong><small>{q.when}</small></span>
+        </span>
+        <span className="qcarte__compteurs">
+          <span className="qcarte__compteur" title={pluriel(q.votes, "vote")}>
+            <Icon size={15}><path d="M12 4l7 8h-4v8H9v-8H5z" /></Icon>{q.votes}
+          </span>
+          <BadgeReponses nombre={q.answers} resolue={q.solved} />
+          <span className="qcarte__compteur" title={pluriel(q.views, "vue")}>{I.eye}{q.views}</span>
+        </span>
+      </div>
+    </article>
+  );
+}
+
 /* Carte du bas du menu : groupe de personnes sur des vagues bleues */
 const CarteCommunaute = () => (
   <div className="communaute">
@@ -129,8 +194,10 @@ const versCarte = (q) => ({
   title: q.titre,
   excerpt: extrait(sansMiseEnForme(q.description)),
   description: q.description,
-  tags: [q.categorie.nom, ...q.tags],
+  tags: q.tags,
+  categorie: q.categorie.nom,
   categorieId: q.categorie.id,
+  categorieCouleur: q.categorie.couleur,
   author: nomCourt(q.auteur),
   authorUsername: q.auteur.username,
   color: couleurPour(q.auteur.username),
@@ -226,7 +293,7 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
     const s = query.trim().toLowerCase();
     if (s) {
       items = items.filter((q) =>
-        [q.title, q.description, q.author, ...q.tags].some((texte) => texte.toLowerCase().includes(s))
+        [q.title, q.description, q.author, q.categorie, ...q.tags].some((texte) => texte.toLowerCase().includes(s))
       );
     }
     return items;
@@ -363,42 +430,8 @@ export default function HomePage({ user, vue, onChangerVue, onLogout, onAskQuest
               )}
 
               {list.map((q) => (
-                <article key={q.id} className="card question">
-                  <div className="question__stats">
-                    <div className="question__votes">
-                      <strong>{q.votes}</strong><span>{Math.abs(q.votes) > 1 ? "votes" : "vote"}</span>
-                    </div>
-                    <span className={`question__answers${q.solved ? " is-solved" : q.answers === 0 ? " is-empty" : ""}`}>
-                      {q.solved && I.check}{q.answers} rép.
-                    </span>
-                  </div>
-
-                  <div className="question__content">
-                    <div className="question__ligne-titre">
-                      <h2>
-                        <button type="button" className="question__lien" onClick={() => onOpenQuestion(q.id)}>
-                          {q.title}
-                        </button>
-                      </h2>
-                      <button type="button" className={`etoile${q.favori ? " is-active" : ""}`}
-                        onClick={() => handleFavori(q.id)} aria-pressed={q.favori}
-                        title={q.favori ? "Retirer des favoris" : "Ajouter aux favoris"}
-                        aria-label={q.favori ? "Retirer des favoris" : "Ajouter aux favoris"}>
-                        {q.favori ? I.etoilePleine : I.star}
-                      </button>
-                    </div>
-                    <p>{q.excerpt}</p>
-                    <div className="question__tags">
-                      {q.tags.map((t) => <span key={t} className="tag">{t}</span>)}
-                    </div>
-                    <div className="question__meta">
-                      <Avatar name={q.author} color={q.color} size={24} />
-                      <span className="question__author">{q.author}</span>
-                      <span>•</span><span>{q.when}</span>
-                      <span>•</span>{I.eye}<span>{pluriel(q.views, "vue")}</span>
-                    </div>
-                  </div>
-                </article>
+                <CarteQuestion key={q.id} q={q}
+                  onOuvrir={() => onOpenQuestion(q.id)} onFavori={() => handleFavori(q.id)} />
               ))}
             </>
           )}
